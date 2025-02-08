@@ -1,0 +1,143 @@
+{% extends "base/crud_template.html" %}
+
+{% block title %}产品管理{% endblock %}
+
+{% block content %}
+{{ super() }}
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+    // 状态格式化
+    function statusFormatter(value) {
+        const statusMap = {
+            'enabled': '上架',
+            'disabled': '下架'
+        };
+        return `<span class="status-badge ${value}">${statusMap[value] || value}</span>`;
+    }
+
+    // 价格格式化
+    function priceFormatter(value) {
+        return value ? `¥${parseFloat(value).toFixed(2)}` : '-';
+    }
+
+    // 操作按钮格式化
+    function operateFormatter(value, row) {
+        return `
+            <div class="action-buttons">
+                <button class="btn btn-link p-0 mx-1" data-action="view" data-id="${row.id}" title="查看">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="edit" data-id="${row.id}" title="编辑">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="delete" data-id="${row.id}" title="删除">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    // 页面配置
+    const crud_config = {
+        debug: false,
+        show_toolbar: true,
+        show_create_button: true,
+        create_button_text: '新增产品',
+        show_batch_delete: true,
+        search_fields: [
+            {
+                label: '产品名称',
+                name: 'name',
+                placeholder: '请输入产品名称'
+            },
+            {
+                label: '产品代码',
+                name: 'code',
+                placeholder: '请输入产品代码'
+            },
+            {
+                label: '状态',
+                name: 'status',
+                type: 'select',
+                options: [
+                    { value: '', text: '全部' },
+                    { value: 'enabled', text: '上架' },
+                    { value: 'disabled', text: '下架' }
+                ]
+            }
+        ],
+        table_columns: [
+            { field: 'name', title: '产品名称', sortable: true },
+            { field: 'code', title: '产品代码' },
+            { field: 'price', title: '价格', formatter: 'priceFormatter' },
+            { field: 'status', title: '状态', formatter: 'statusFormatter' },
+            { field: 'created_at', title: '创建时间', sortable: true },
+            { field: 'operate', title: '操作', align: 'center', formatter: 'operateFormatter' }
+        ],
+        form_fields: [
+            {
+                label: '产品名称',
+                name: 'name',
+                required: true,
+                placeholder: '请输入产品名称'
+            },
+            {
+                label: '产品代码',
+                name: 'code',
+                required: true,
+                placeholder: '请输入产品代码'
+            },
+            {
+                label: '价格',
+                name: 'price',
+                type: 'number',
+                required: true,
+                placeholder: '请输入产品价格'
+            },
+            {
+                label: '状态',
+                name: 'status',
+                type: 'select',
+                required: true,
+                options: [
+                    { value: 'enabled', text: '上架' },
+                    { value: 'disabled', text: '下架' }
+                ]
+            },
+            {
+                label: '描述',
+                name: 'description',
+                type: 'textarea',
+                rows: 3,
+                placeholder: '请输入产品描述'
+            }
+        ],
+        endpoints: {
+            list: '/business/product/api/products',
+            create: '/business/product/api/products',
+            update: '/business/product/api/products/{id}',
+            delete: '/business/product/api/products/{id}',
+            view: '/business/product/api/products/{id}'
+        },
+        form: {
+            validator: (data) => {
+                if (!data.code.match(/^[A-Z0-9_]+$/)) {
+                    window.toast.error('产品代码只能包含大写字母、数字和下划线');
+                    return false;
+                }
+                if (parseFloat(data.price) <= 0) {
+                    window.toast.error('产品价格必须大于0');
+                    return false;
+                }
+                return true;
+            }
+        }
+    };
+
+    // 设置页面配置
+    document.querySelector('.crud-container').dataset.crudConfig = JSON.stringify(crud_config);
+</script>
+{% endblock %}

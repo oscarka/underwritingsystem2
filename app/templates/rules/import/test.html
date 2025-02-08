@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">规则导入测试</h5>
+                </div>
+                <div class="card-body">
+                    <form id="importForm" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="file">选择Excel文件</label>
+                            <input type="file" class="form-control-file" id="file" name="file" accept=".xls,.xlsx"
+                                required>
+                            <small class="form-text text-muted">
+                                请选择包含以下sheet的Excel文件：疾病表、问题表、答案表
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">导入</button>
+                    </form>
+
+                    <div id="result" class="mt-4" style="display: none;">
+                        <div class="alert" role="alert"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('importForm').onsubmit = function (e) {
+        e.preventDefault();
+
+        var formData = new FormData();
+        var fileInput = document.getElementById('file');
+        formData.append('file', fileInput.files[0]);
+
+        // 显示加载状态
+        var resultDiv = document.getElementById('result');
+        var alertDiv = resultDiv.querySelector('.alert');
+        resultDiv.style.display = 'block';
+        alertDiv.className = 'alert alert-info';
+        alertDiv.textContent = '正在导入...';
+
+        fetch('/rules/import/underwriting', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0) {
+                    alertDiv.className = 'alert alert-success';
+                    alertDiv.innerHTML = `
+                <h5>导入成功！</h5>
+                <ul class="mb-0">
+                    <li>总记录数：${data.data.total}</li>
+                    <li>成功数：${data.data.success}</li>
+                    <li>失败数：${data.data.error}</li>
+                    <li>批次号：${data.data.batch_no}</li>
+                </ul>
+            `;
+                } else {
+                    alertDiv.className = 'alert alert-danger';
+                    alertDiv.textContent = '导入失败：' + data.message;
+                }
+            })
+            .catch(error => {
+                alertDiv.className = 'alert alert-danger';
+                alertDiv.textContent = '导入失败：' + error;
+            });
+    }
+</script>
+{% endblock %}

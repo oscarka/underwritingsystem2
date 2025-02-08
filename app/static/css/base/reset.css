@@ -1,0 +1,58 @@
+/* 重置默认样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100%;
+    font-family: var(--apple-font);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    color: var(--apple-dark);
+    background-color: var(--apple-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 移除列表样式 */
+ul,
+ol {
+    list-style: none;
+}
+
+/* 移除链接下划线 */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 表单元素重置 */
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: 100%;
+    line-height: 1.15;
+    margin: 0;
+}
+
+button {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+/* 图片默认样式 */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}

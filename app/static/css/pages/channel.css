@@ -1,0 +1,318 @@
+/* 引入基础组件样式 */
+@import url('../base/variables.css');
+@import url('../base/layout.css');
+@import url('../components/buttons.css');
+@import url('../components/forms.css');
+@import url('../components/tables.css');
+@import url('../components/modals.css');
+@import url('../components/badges.css');
+@import url('../components/base/button.css');
+
+/* 渠道管理页面样式 */
+.channel-page {
+    padding: var(--spacing-lg);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 20px;
+}
+
+.page-header h2 {
+    font-size: 24px;
+    margin: 0;
+}
+
+/* 搜索区域样式 */
+.channel-page .search-section {
+    composes: search-section;
+}
+
+.search-section .form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.search-section .btn-group {
+    margin-top: 20px;
+}
+
+/* 表格样式 */
+.channel-page .table-section {
+    composes: table-section;
+}
+
+.channel-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.channel-table th {
+    background-color: var(--card-background);
+    color: var(--text-primary);
+    font-weight: 600;
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.channel-table td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.channel-table tbody tr:hover {
+    background-color: var(--card-background);
+}
+
+/* 状态标签样式 */
+.channel-page .status-badge.active {
+    background-color: var(--success-light);
+    color: var(--success-dark);
+}
+
+.channel-page .status-badge.inactive {
+    background-color: var(--warning-light);
+    color: var(--warning-dark);
+}
+
+/* 按钮样式 */
+.btn-view,
+.btn-edit,
+.btn-delete {
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: var(--spacing-xs);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-view {
+    background-color: var(--card-background);
+    color: var(--text-primary);
+}
+
+.btn-view:hover {
+    background-color: #ebebeb;
+}
+
+.btn-edit {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-delete {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #ff4b40;
+}
+
+/* 详情页样式 */
+.channel-detail {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.channel-detail .detail-item {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.channel-detail .detail-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.channel-detail .detail-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.channel-detail .detail-value {
+    color: var(--text-primary);
+}
+
+/* 表单样式 */
+.form-section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section .card {
+    background-color: var(--background-color);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-section .form-label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-section .form-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-xs);
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 卡片样式 */
+.card {
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* 搜索表单样式 */
+.search-form {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.form-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+}
+
+/* 表格容器样式 */
+.table-container {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.enabled {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.status-badge.disabled {
+    background-color: var(--danger-light);
+    color: var(--danger);
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.action-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 模态框样式扩展 */
+.modal-content {
+    border-radius: var(--border-radius-lg);
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-label.required::after {
+    content: '*';
+    color: var(--danger);
+    margin-left: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .channel-page {
+        padding: var(--spacing-md);
+    }
+
+    .search-section {
+        padding: var(--spacing-md);
+    }
+
+    .channel-table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .btn-view,
+    .btn-edit,
+    .btn-delete {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    .search-form {
+        padding: var(--spacing-md);
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+}

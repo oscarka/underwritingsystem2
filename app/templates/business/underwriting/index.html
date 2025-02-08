@@ -1,0 +1,131 @@
+{% extends "base/crud_template.html" %}
+
+{% block title %}核保管理{% endblock %}
+
+{% block content %}
+{% set crud_config = {
+"debug": false,
+"autoInit": true,
+"show_toolbar": true,
+"show_create_button": false,
+"show_batch_delete": false,
+"table": {
+"url": "/business/underwriting/api/orders",
+"columns": [
+{ "field": "order_no", "title": "订单号" },
+{ "field": "customer_name", "title": "客户姓名" },
+{ "field": "product_name", "title": "产品名称" },
+{ "field": "amount", "title": "保费" },
+{ "field": "status", "title": "状态", "formatter": "statusFormatter" },
+{ "field": "created_at", "title": "创建时间", "sortable": true },
+{ "field": "operate", "title": "操作", "align": "center", "formatter": "operateFormatter" }
+]
+},
+"search": {
+"fields": [
+{
+"label": "订单号",
+"name": "order_no",
+"placeholder": "请输入订单号"
+},
+{
+"label": "客户姓名",
+"name": "customer_name",
+"placeholder": "请输入客户姓名"
+},
+{
+"label": "状态",
+"name": "status",
+"type": "select",
+"options": [
+{ "value": "", "text": "全部" },
+{ "value": "pending", "text": "待审核" },
+{ "value": "approved", "text": "已通过" },
+{ "value": "rejected", "text": "已拒绝" }
+]
+}
+]
+},
+"form": {
+"fields": [
+{
+"label": "订单号",
+"name": "order_no",
+"type": "text",
+"readonly": true
+},
+{
+"label": "客户姓名",
+"name": "customer_name",
+"type": "text",
+"readonly": true
+},
+{
+"label": "产品名称",
+"name": "product_name",
+"type": "text",
+"readonly": true
+},
+{
+"label": "保费",
+"name": "amount",
+"type": "text",
+"readonly": true
+},
+{
+"label": "审核结果",
+"name": "status",
+"type": "select",
+"required": true,
+"options": [
+{ "value": "approved", "text": "通过" },
+{ "value": "rejected", "text": "拒绝" }
+]
+},
+{
+"label": "审核意见",
+"name": "comment",
+"type": "textarea",
+"rows": 3,
+"required": true,
+"placeholder": "请输入审核意见"
+}
+]
+},
+"endpoints": {
+"list": "/business/underwriting/api/orders",
+"update": "/business/underwriting/api/orders/{id}/approve",
+"view": "/business/underwriting/api/orders/{id}"
+}
+} %}
+{{ super() }}
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+    // 状态格式化
+    function statusFormatter(value) {
+        const statusMap = {
+            'pending': '待审核',
+            'approved': '已通过',
+            'rejected': '已拒绝'
+        };
+        return `<span class="status-badge ${value}">${statusMap[value] || value}</span>`;
+    }
+
+    // 操作按钮格式化
+    function operateFormatter(value, row) {
+        return `
+            <div class="action-buttons">
+                <button class="btn btn-link p-0 mx-1" data-action="view" data-id="${row.id}" title="查看">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="approve" data-id="${row.id}" title="审核" ${row.status !== 'pending' ? 'disabled' : ''}>
+                    <i class="bi bi-check-circle"></i>
+                </button>
+            </div>
+        `;
+    }
+</script>
+{% endblock %}

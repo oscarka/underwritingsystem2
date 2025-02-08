@@ -1,0 +1,90 @@
+{% extends "base/basic_template.html" %}
+
+{% block title %}首页{% endblock %}
+
+{% block css %}
+<style>
+    .welcome-section {
+        padding: 2rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        margin: 2rem auto;
+        max-width: 800px;
+        text-align: center;
+    }
+
+    .welcome-title {
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+    }
+
+    .welcome-description {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .feature-card {
+        background: var(--background-light);
+        padding: 1.5rem;
+        border-radius: 6px;
+        text-align: center;
+    }
+
+    .feature-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .feature-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-section">
+    <h1 class="welcome-title">欢迎使用核保系统</h1>
+    <p class="welcome-description">这是一个智能核保系统，可以帮助您快速完成核保工作。</p>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="bi bi-gear"></i>
+            </div>
+            <h3 class="feature-title">智能规则引擎</h3>
+            <p class="feature-description">强大的规则引擎，支持复杂的核保规则配置</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="bi bi-lightning"></i>
+            </div>
+            <h3 class="feature-title">快速响应</h3>
+            <p class="feature-description">毫秒级响应，支持高并发核保请求</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <h3 class="feature-title">数据分析</h3>
+            <p class="feature-description">完整的数据分析和报表功能</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

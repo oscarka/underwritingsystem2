@@ -1,0 +1,27 @@
+/* 主布局容器 */
+.main-container {
+    margin-left: 240px;
+    /* 侧边栏宽度 */
+    margin-top: 60px;
+    /* 顶部导航栏高度 */
+    min-height: calc(100vh - 60px);
+    background-color: var(--background-color);
+    transition: margin-left 0.3s;
+}
+
+/* 当侧边栏收起时 */
+.sidebar-collapsed .main-container {
+    margin-left: 64px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .main-container {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .sidebar-collapsed .main-container {
+        margin-left: 0;
+    }
+}

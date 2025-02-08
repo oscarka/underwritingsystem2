@@ -1,0 +1,155 @@
+{% extends "base/basic_template.html" %}
+
+{% block title %}编辑产品{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/product.css') }}">
+<style>
+    .product-page {
+        padding: var(--spacing-lg);
+    }
+
+    .page-header {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    .form-group {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .form-label {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-text {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="product-page">
+    <div class="page-header">
+        <h2>编辑产品</h2>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <form id="productForm">
+                <div class="form-group">
+                    <label for="name" class="form-label">产品名称</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}"
+                        maxlength="50" required>
+                    <small class="form-text">不超过50个字</small>
+                </div>
+                <div class="form-group">
+                    <label for="code" class="form-label">产品代码</label>
+                    <input type="text" class="form-control" id="code" name="code" value="{{ product.code }}"
+                        maxlength="30" pattern="[A-Z0-9_]+" required>
+                    <small class="form-text">不超过30个字，仅支持大写字母、数字和下划线</small>
+                </div>
+                <div class="form-group">
+                    <label for="company_id" class="form-label">保司</label>
+                    <select class="form-select" id="company_id" name="company_id" required>
+                        <option value="">请选择保司</option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}" {{ 'selected' if company.id==product.company_id }}>{{
+                            company.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="price" class="form-label">保费</label>
+                    <div class="input-group">
+                        <span class="input-group-text">¥</span>
+                        <input type="number" class="form-control" id="price" name="price" value="{{ product.price }}"
+                            min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="coverage" class="form-label">保额</label>
+                    <div class="input-group">
+                        <span class="input-group-text">¥</span>
+                        <input type="number" class="form-control" id="coverage" name="coverage"
+                            value="{{ product.coverage }}" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="period" class="form-label">保障期限</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="period" name="period" value="{{ product.period }}"
+                            min="1" required>
+                        <span class="input-group-text">年</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="status" class="form-label">状态</label>
+                    <select class="form-select" id="status" name="status" required>
+                        <option value="enabled" {{ 'selected' if product.status=='enabled' }}>上架</option>
+                        <option value="disabled" {{ 'selected' if product.status=='disabled' }}>下架</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description" class="form-label">描述</label>
+                    <textarea class="form-control" id="description" name="description"
+                        maxlength="200">{{ product.description }}</textarea>
+                    <small class="form-text">不超过200个字</small>
+                </div>
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('product.index') }}" class="btn btn-secondary">返回</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('productForm');
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/business/product/api/products/{{ product.id }}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    window.toast.success('保存成功');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("product.index") }}';
+                    }, 1000);
+                } else {
+                    window.toast.error(result.message || '保存失败');
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                window.toast.error('保存失败');
+            }
+        });
+    });
+</script>
+{% endblock %}

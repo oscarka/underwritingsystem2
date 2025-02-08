@@ -1,0 +1,117 @@
+{% extends "base/basic_template.html" %}
+
+{% block title %}查看产品{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/product.css') }}">
+<style>
+    .product-page {
+        padding: var(--spacing-lg);
+    }
+
+    .page-header {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header h2 {
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    .info-group {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .info-label {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .status-badge.enabled {
+        background-color: #e6f7ff;
+        color: #1890ff;
+    }
+
+    .status-badge.disabled {
+        background-color: #fff1f0;
+        color: #ff4d4f;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="product-page">
+    <div class="page-header">
+        <h2>产品详情</h2>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="info-group">
+                <div class="info-label">产品名称</div>
+                <div class="info-value">{{ product.name }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">产品代码</div>
+                <div class="info-value">{{ product.code }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">状态</div>
+                <div class="info-value">
+                    <span class="status-badge {{ product.status }}">
+                        {{ '上架' if product.status == 'enabled' else '下架' }}
+                    </span>
+                </div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">保司</div>
+                <div class="info-value">{{ product.company.name }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">保费</div>
+                <div class="info-value">¥{{ "%.2f"|format(product.price) }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">保额</div>
+                <div class="info-value">¥{{ "%.2f"|format(product.coverage) }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">保障期限</div>
+                <div class="info-value">{{ product.period }}年</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">描述</div>
+                <div class="info-value">{{ product.description or '-' }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">创建时间</div>
+                <div class="info-value">{{ product.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            </div>
+            <div class="info-group">
+                <div class="info-label">更新时间</div>
+                <div class="info-value">{{ product.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            </div>
+            <div class="mt-4">
+                <a href="{{ url_for('product.edit', id=product.id) }}" class="btn btn-primary">编辑</a>
+                <a href="{{ url_for('product.index') }}" class="btn btn-secondary">返回</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}编辑核保规则{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/rule.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="rule-page">
+    <div class="page-header">
+        <h2>编辑核保规则</h2>
+    </div>
+
+    <div class="rule-form">
+        <form id="ruleForm">
+            <div class="form-group">
+                <label for="name">规则名称</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ rule.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="version">版本号</label>
+                <input type="text" class="form-control" id="version" name="version" value="{{ rule.version }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">描述</label>
+                <textarea class="form-control" id="description" name="description"
+                    rows="3">{{ rule.description }}</textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">保存</button>
+                <button type="button" class="btn-cancel" onclick="history.back()">返回</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.getElementById('ruleForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('name').value,
+            version: document.getElementById('version').value,
+            description: document.getElementById('description').value
+        };
+
+        try {
+            const response = await fetch('/rules/underwriting/{{ rule.id }}', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                alert('更新成功');
+                window.location.href = '/rules/underwriting';
+            } else {
+                alert(data.message || '更新失败');
+            }
+        } catch (error) {
+            console.error('更新规则失败:', error);
+            alert('更新失败');
+        }
+    });
+</script>
+{% endblock %}

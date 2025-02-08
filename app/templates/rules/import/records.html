@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">导入历史记录</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>批次号</th>
+                                    <th>导入类型</th>
+                                    <th>文件名</th>
+                                    <th>状态</th>
+                                    <th>总记录数</th>
+                                    <th>成功数</th>
+                                    <th>失败数</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordList">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入详情模态框 -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">导入详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Sheet名称</th>
+                                <th>行号</th>
+                                <th>状态</th>
+                                <th>错误信息</th>
+                                <th>数据类型</th>
+                                <th>原始数据</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailList">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 获取导入记录列表
+    async function loadRecords() {
+        try {
+            const response = await fetch('/rules/import/records');
+            const data = await response.json();
+            if (data.code === 0) {
+                renderRecordList(data.data);
+            } else {
+                alert('获取导入记录失败：' + data.message);
+            }
+        } catch (error) {
+            alert('获取导入记录失败：' + error);
+        }
+    }
+
+    // 渲染导入记录列表
+    function renderRecordList(records) {
+        const tbody = document.getElementById('recordList');
+        tbody.innerHTML = '';
+
+        records.forEach(record => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${record.batch_no}</td>
+                <td>${record.import_type}</td>
+                <td>${record.file_name}</td>
+                <td>
+                    <span class="badge ${getBadgeClass(record.status)}">
+                        ${getStatusText(record.status)}
+                    </span>
+                </td>
+                <td>${record.total_count}</td>
+                <td>${record.success_count}</td>
+                <td>${record.error_count}</td>
+                <td>${record.created_at}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="showDetails('${record.batch_no}')">
+                        查看详情
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 获取状态对应的样式类
+    function getBadgeClass(status) {
+        switch (status) {
+            case 'completed':
+                return 'bg-success';
+            case 'failed':
+                return 'bg-danger';
+            case 'processing':
+                return 'bg-warning';
+            default:
+                return 'bg-secondary';
+        }
+    }
+
+    // 获取状态对应的文本
+    function getStatusText(status) {
+        switch (status) {
+            case 'completed':
+                return '已完成';
+            case 'failed':
+                return '失败';
+            case 'processing':
+                return '处理中';
+            default:
+                return '未知';
+        }
+    }
+
+    // 显示导入详情
+    async function showDetails(batchNo) {
+        try {
+            const response = await fetch(`/rules/import/records/${batchNo}/details`);
+            const data = await response.json();
+            if (data.code === 0) {
+                renderDetailList(data.data.details);
+                new bootstrap.Modal(document.getElementById('detailModal')).show();
+            } else {
+                alert('获取导入详情失败：' + data.message);
+            }
+        } catch (error) {
+            alert('获取导入详情失败：' + error);
+        }
+    }
+
+    // 渲染导入详情列表
+    function renderDetailList(details) {
+        const tbody = document.getElementById('detailList');
+        tbody.innerHTML = '';
+
+        details.forEach(detail => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${detail.sheet_name}</td>
+                <td>${detail.row_number}</td>
+                <td>
+                    <span class="badge ${detail.status === 'success' ? 'bg-success' : 'bg-danger'}">
+                        ${detail.status === 'success' ? '成功' : '失败'}
+                    </span>
+                </td>
+                <td>${detail.error_message || '-'}</td>
+                <td>${detail.data_type}</td>
+                <td>
+                    <pre class="mb-0"><code>${JSON.stringify(detail.raw_data, null, 2)}</code></pre>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 页面加载完成后获取导入记录
+    document.addEventListener('DOMContentLoaded', loadRecords);
+</script>
+
+<style>
+    pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

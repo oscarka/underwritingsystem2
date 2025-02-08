@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}查看规则详情{% endblock %}
+
+{% block styles %}
+<style>
+    .tab-content {
+        padding: 20px;
+    }
+
+    .disease-card,
+    .question-card {
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        background: #fff;
+    }
+
+    .answer-list {
+        margin-left: 20px;
+    }
+
+    .answer-item {
+        margin: 10px 0;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        background: #f8f9fa;
+    }
+
+    .nav-tabs {
+        margin-bottom: 20px;
+    }
+
+    .category-title {
+        margin: 20px 0 10px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #007bff;
+    }
+
+    .field-row {
+        margin-bottom: 8px;
+    }
+
+    .meta-info {
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">规则详情</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <strong>规则名称：</strong>{{ rule.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>版本号：</strong>{{ rule.version }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>状态：</strong>{{ rule.status_display }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>创建时间：</strong>{{ rule.created_at.strftime('%Y-%m-%d %H:%M:%S') if rule.created_at }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>描述：</strong>{{ rule.description }}
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#diseases" role="tab"
+                                aria-controls="diseases" aria-selected="true">疾病列表</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#questions" role="tab" aria-controls="questions"
+                                aria-selected="false">问题列表</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#answers" role="tab" aria-controls="answers"
+                                aria-selected="false">答案列表</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 疾病标签页 -->
+                        <div class="tab-pane fade show active" id="diseases" role="tabpanel">
+                            {% for category_code, category in diseases_by_category.items() %}
+                            <div class="category-section">
+                                <h4 class="category-title">{{ category.name }}</h4>
+                                {% for disease in category.diseases %}
+                                <div class="disease-card">
+                                    <div class="field-row"><strong>疾病名称：</strong>{{ disease.name }}</div>
+                                    <div class="field-row"><strong>疾病编码：</strong>{{ disease.code }}</div>
+                                    <div class="field-row"><strong>疾病大类：</strong>{{ disease.category_name }}</div>
+                                    <div class="field-row"><strong>大类编码：</strong>{{ disease.category_code }}</div>
+                                    <div class="field-row"><strong>首个问题编码：</strong>{{ disease.first_question_code }}
+                                    </div>
+                                    <div class="field-row"><strong>风险等级：</strong>{{ disease.risk_level }}</div>
+                                    <div class="field-row"><strong>描述：</strong>{{ disease.description }}</div>
+                                    <div class="field-row"><strong>是否常见：</strong>{{ '是' if disease.is_common else '否' }}
+                                    </div>
+                                    <div class="field-row"><strong>排序：</strong>{{ disease.sort_order }}</div>
+                                    <div class="field-row"><strong>状态：</strong>{{ disease.status }}</div>
+                                    <div class="meta-info">
+                                        <div><strong>批次号：</strong>{{ disease.batch_no }}</div>
+                                        <div><strong>创建时间：</strong>{{ disease.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                                            if disease.created_at }}</div>
+                                        <div><strong>更新时间：</strong>{{ disease.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+                                            if disease.updated_at }}</div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 问题标签页 -->
+                        <div class="tab-pane fade" id="questions" role="tabpanel">
+                            {% for question in questions %}
+                            <div class="question-card">
+                                <div class="field-row"><strong>问题内容：</strong>{{ question.content }}</div>
+                                <div class="field-row"><strong>问题编码：</strong>{{ question.code }}</div>
+                                <div class="field-row"><strong>问题类型：</strong>{{ question.question_type }}</div>
+                                <div class="field-row"><strong>问题属性：</strong>{{ question.attribute }}</div>
+                                <div class="field-row"><strong>备注：</strong>{{ question.remark }}</div>
+                                <div class="field-row"><strong>规则ID：</strong>{{ question.rule_id }}</div>
+                                <div class="field-row"><strong>类型ID：</strong>{{ question.type_id }}</div>
+                                <div class="meta-info">
+                                    <div><strong>批次号：</strong>{{ question.batch_no }}</div>
+                                    <div><strong>创建时间：</strong>{{ question.created_at.strftime('%Y-%m-%d %H:%M:%S') if
+                                        question.created_at }}</div>
+                                    <div><strong>更新时间：</strong>{{ question.updated_at.strftime('%Y-%m-%d %H:%M:%S') if
+                                        question.updated_at }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 答案标签页 -->
+                        <div class="tab-pane fade" id="answers" role="tabpanel">
+                            {% for question in questions %}
+                            <div class="question-card">
+                                <h5>问题：{{ question.content }}</h5>
+                                <div class="answer-list">
+                                    {% for answer in answers_by_question.get(question.id, []) %}
+                                    <div class="answer-item">
+                                        <div class="field-row"><strong>答案内容：</strong>{{ answer.content }}</div>
+                                        <div class="field-row"><strong>医学结论：</strong>{{ answer.medical_conclusion }}
+                                        </div>
+                                        <div class="field-row"><strong>医学特殊编码：</strong>{{ answer.medical_special_code }}
+                                        </div>
+                                        <div class="meta-info">
+                                            <div><strong>问题ID：</strong>{{ answer.question_id }}</div>
+                                            <div><strong>批次号：</strong>{{ answer.batch_no }}</div>
+                                            <div><strong>创建时间：</strong>{{ answer.created_at.strftime('%Y-%m-%d
+                                                %H:%M:%S') if answer.created_at }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+        // Bootstrap 4 的标签页切换初始化
+        $('#diseases').tab('show');
+
+        // 为所有标签页绑定点击事件
+        $('.nav-tabs a').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
+    });
+</script>
+{% endblock %}

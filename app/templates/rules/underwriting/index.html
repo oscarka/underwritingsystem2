@@ -1,0 +1,161 @@
+{% extends "base/crud_template.html" %}
+
+{% block title %}核保规则管理{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/rule.css') }}">
+<style>
+    .import-log {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        max-height: 500px;
+        overflow-y: auto;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+    // 状态格式化
+    function statusFormatter(value) {
+        const statusMap = {
+            'enabled': '启用',
+            'disabled': '禁用'
+        };
+        return `<span class="status-badge ${value}">${statusMap[value] || value}</span>`;
+    }
+
+    // 操作按钮格式化
+    function operateFormatter(value, row) {
+        return `
+            <div class="action-buttons">
+                <button class="btn btn-link p-0 mx-1" data-action="view" data-id="${row.id}" title="查看">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="edit" data-id="${row.id}" title="编辑">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="delete" data-id="${row.id}" title="删除">
+                    <i class="bi bi-trash"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="export" data-id="${row.id}" title="导出">
+                    <i class="bi bi-download"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    // 页面配置
+    const crud_config = {
+        debug: false,
+        show_toolbar: true,
+        show_create_button: true,
+        create_button_text: '新增规则',
+        show_batch_delete: true,
+        search_fields: [
+            {
+                label: '规则名称',
+                name: 'name',
+                placeholder: '请输入规则名称'
+            },
+            {
+                label: '状态',
+                name: 'status',
+                type: 'select',
+                options: [
+                    { value: '', text: '全部' },
+                    { value: 'enabled', text: '启用' },
+                    { value: 'disabled', text: '禁用' }
+                ]
+            }
+        ],
+        table_columns: [
+            { field: 'name', title: '规则名称' },
+            { field: 'description', title: '描述' },
+            { field: 'version', title: '版本号' },
+            { field: 'status', title: '状态', formatter: 'statusFormatter' },
+            { field: 'created_at', title: '创建时间', sortable: true },
+            { field: 'updated_at', title: '更新时间', sortable: true },
+            { field: 'operate', title: '操作', align: 'center', formatter: 'operateFormatter' }
+        ],
+        form_fields: [
+            {
+                label: '规则名称',
+                name: 'name',
+                required: true,
+                placeholder: '请输入规则名称'
+            },
+            {
+                label: '描述',
+                name: 'description',
+                type: 'textarea',
+                rows: 3,
+                placeholder: '请输入规则描述'
+            },
+            {
+                label: '版本号',
+                name: 'version',
+                required: true,
+                placeholder: '请输入版本号'
+            },
+            {
+                label: '状态',
+                name: 'status',
+                type: 'select',
+                required: true,
+                options: [
+                    { value: 'enabled', text: '启用' },
+                    { value: 'disabled', text: '禁用' }
+                ]
+            }
+        ],
+        endpoints: {
+            list: '/rules/underwriting/api/rules',
+            create: '/rules/underwriting/api/rules',
+            update: '/rules/underwriting/api/rules/{id}',
+            delete: '/rules/underwriting/api/rules/{id}',
+            view: '/rules/underwriting/api/rules/{id}'
+        }
+    };
+
+    // 设置页面配置
+    document.querySelector('.crud-container').dataset.crudConfig = JSON.stringify(crud_config);
+
+    // 导出规则
+    document.addEventListener('click', async function (e) {
+        const exportButton = e.target.closest('[data-action="export"]');
+        if (!exportButton) return;
+
+        const ruleId = exportButton.dataset.id;
+        try {
+            const response = await fetch(`/rules/underwriting/${ruleId}/export`);
+            const data = await response.json();
+            if (data.status === 'success') {
+                const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rule_${ruleId}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                window.toast.error(data.message || '导出失败');
+            }
+        } catch (error) {
+            console.error('导出规则失败:', error);
+            window.toast.error('导出失败');
+        }
+    });
+</script>
+{% endblock %}

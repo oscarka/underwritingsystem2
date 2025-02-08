@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}疾病分类管理{% endblock %}
+
+{% block css %}
+.required {
+color: red;
+margin-right: 3px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h4>疾病分类管理</h4>
+        </div>
+        <div class="col text-end">
+            <button type="button" class="btn btn-primary" onclick="showAddModal()">
+                <i class="bi bi-plus"></i> 添加分类
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form id="searchForm" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="searchName" placeholder="分类名称">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="searchCode" placeholder="分类编码">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="searchStatus">
+                        <option value="">全部状态</option>
+                        <option value="enabled">启用</option>
+                        <option value="disabled">禁用</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-primary me-2" onclick="searchCategories()">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetSearch()">
+                        <i class="bi bi-arrow-counterclockwise"></i> 重置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>分类名称</th>
+                    <th>分类编码</th>
+                    <th>描述</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="categoryList">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 添加分类模态框 -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加分类</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="mb-3">
+                        <label class="form-label"><span class="required">*</span>分类名称</label>
+                        <input type="text" class="form-control" name="name" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><span class="required">*</span>分类编码</label>
+                        <input type="text" class="form-control" name="code" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" name="description" maxlength="500" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="enabled">启用</option>
+                            <option value="disabled">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑分类模态框 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑分类</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" name="id">
+                    <div class="mb-3">
+                        <label class="form-label"><span class="required">*</span>分类名称</label>
+                        <input type="text" class="form-control" name="name" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><span class="required">*</span>分类编码</label>
+                        <input type="text" class="form-control" name="code" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" name="description" maxlength="500" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status">
+                            <option value="enabled">启用</option>
+                            <option value="disabled">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const addModal = new bootstrap.Modal(document.getElementById('addModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+    // 加载分类列表
+    async function loadCategories() {
+        try {
+            const response = await api.get('{{ url_for('rules.list_disease_categories') }}');
+            if (response.code === 0) {
+                renderCategoryList(response.data);
+            } else {
+                showError(response.message);
+            }
+        } catch (error) {
+            showError('加载分类列表失败');
+        }
+    }
+
+    // 渲染分类列表
+    function renderCategoryList(categories) {
+        const tbody = document.getElementById('categoryList');
+        tbody.innerHTML = '';
+
+        categories.forEach(category => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+            <td>${category.id}</td>
+            <td>${category.name}</td>
+            <td>${category.code}</td>
+            <td>${category.description || ''}</td>
+            <td>${category.status === 'enabled' ? '启用' : '禁用'}</td>
+            <td>${category.created_at_str}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-primary me-2" onclick="showEditModal(${category.id})">
+                    <i class="bi bi-pencil"></i> 编辑
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">
+                    <i class="bi bi-trash"></i> 删除
+                </button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 显示添加模态框
+    function showAddModal() {
+        document.getElementById('addForm').reset();
+        addModal.show();
+    }
+
+    // 添加分类
+    async function addCategory() {
+        const form = document.getElementById('addForm');
+        const data = {
+            name: form.name.value,
+            code: form.code.value,
+            description: form.description.value,
+            status: form.status.value,
+        };
+
+        try {
+            const response = await api.post('{{ url_for('rules.create_disease_category') }}', data);
+            if (response.code === 0) {
+                showSuccess('添加成功');
+                addModal.hide();
+                loadCategories();
+            } else {
+                showError(response.message);
+            }
+        } catch (error) {
+            showError('添加失败');
+        }
+    }
+
+    // 显示编辑模态框
+    async function showEditModal(id) {
+        try {
+            const response = await api.get(`{{ url_for('rules.get_disease_category', id=0) }}`.replace('0', id));
+            if (response.code === 0) {
+                const form = document.getElementById('editForm');
+                const category = response.data;
+                form.id.value = category.id;
+                form.name.value = category.name;
+                form.code.value = category.code;
+                form.description.value = category.description || '';
+                form.status.value = category.status;
+                editModal.show();
+            } else {
+                showError(response.message);
+            }
+        } catch (error) {
+            showError('加载分类信息失败');
+        }
+    }
+
+    // 更新分类
+    async function updateCategory() {
+        const form = document.getElementById('editForm');
+        const data = {
+            name: form.name.value,
+            code: form.code.value,
+            description: form.description.value,
+            status: form.status.value,
+        };
+
+        try {
+            const response = await api.put(`{{ url_for('rules.update_disease_category', id=0) }}`.replace('0', form.id.value), data);
+            if (response.code === 0) {
+                showSuccess('更新成功');
+                editModal.hide();
+                loadCategories();
+            } else {
+                showError(response.message);
+            }
+        } catch (error) {
+            showError('更新失败');
+        }
+    }
+
+    // 删除分类
+    async function deleteCategory(id) {
+        if (!confirm('确定要删除该分类吗？')) {
+            return;
+        }
+
+        try {
+            const response = await api.delete(`{{ url_for('rules.delete_disease_category', id=0) }}`.replace('0', id));
+            if (response.code === 0) {
+                showSuccess('删除成功');
+                loadCategories();
+            } else {
+                showError(response.message);
+            }
+        } catch (error) {
+            showError('删除失败');
+        }
+    }
+
+    // 搜索分类
+    function searchCategories() {
+        const params = {
+            name: document.getElementById('searchName').value,
+            code: document.getElementById('searchCode').value,
+            status: document.getElementById('searchStatus').value,
+        };
+        loadCategories(params);
+    }
+
+    // 重置搜索
+    function resetSearch() {
+        document.getElementById('searchForm').reset();
+        loadCategories();
+    }
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCategories();
+    });
+</script>
+{% endblock %}

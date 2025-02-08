@@ -1,0 +1,179 @@
+{% extends "base/basic_template.html" %}
+
+{% block title %}仪表盘{% endblock %}
+
+{% block css %}
+<style>
+    .dashboard-container {
+        padding: var(--spacing-lg);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .stat-card {
+        background: #fff;
+        padding: var(--spacing-lg);
+        border-radius: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    .stat-title {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-trend {
+        font-size: 0.9rem;
+    }
+
+    .trend-up {
+        color: #52c41a;
+    }
+
+    .trend-down {
+        color: #ff4d4f;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .chart-card {
+        background: #fff;
+        padding: var(--spacing-lg);
+        border-radius: 8px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    .chart-title {
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        margin-bottom: var(--spacing-md);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">今日核保量</div>
+            <div class="stat-value">2,345</div>
+            <div class="stat-trend trend-up">
+                <i class="bi bi-arrow-up"></i> 12.5%
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">通过率</div>
+            <div class="stat-value">85.4%</div>
+            <div class="stat-trend trend-up">
+                <i class="bi bi-arrow-up"></i> 2.3%
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">平均响应时间</div>
+            <div class="stat-value">238ms</div>
+            <div class="stat-trend trend-down">
+                <i class="bi bi-arrow-down"></i> 5.1%
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">活跃规则数</div>
+            <div class="stat-value">1,287</div>
+            <div class="stat-trend trend-up">
+                <i class="bi bi-arrow-up"></i> 8.7%
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3 class="chart-title">核保量趋势</h3>
+            <div id="underwritingTrendChart" style="height: 300px;"></div>
+        </div>
+        <div class="chart-card">
+            <h3 class="chart-title">通过率分布</h3>
+            <div id="passRateChart" style="height: 300px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 初始化图表
+        const underwritingTrendChart = echarts.init(document.getElementById('underwritingTrendChart'));
+        const passRateChart = echarts.init(document.getElementById('passRateChart'));
+
+        // 核保量趋势图配置
+        underwritingTrendChart.setOption({
+            tooltip: {
+                trigger: 'axis'
+            },
+            xAxis: {
+                type: 'category',
+                data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: [1820, 2390, 2100, 2860, 2450, 1980, 2345],
+                type: 'line',
+                smooth: true,
+                areaStyle: {}
+            }]
+        });
+
+        // 通过率分布图配置
+        passRateChart.setOption({
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left'
+            },
+            series: [{
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    { value: 85.4, name: '通过' },
+                    { value: 10.2, name: '人工审核' },
+                    { value: 4.4, name: '拒绝' }
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        });
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', function () {
+            underwritingTrendChart.resize();
+            passRateChart.resize();
+        });
+    });
+</script>
+{% endblock %}

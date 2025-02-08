@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}编辑智核参数{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ai_parameter.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ai-parameter-page">
+    <div class="page-header">
+        <h2>编辑智核参数</h2>
+        <a href="{{ url_for('rules.parameter_list') }}" class="btn btn-light">返回列表</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="editForm" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label required">参数名称</label>
+                    <input type="text" class="form-control" name="name" maxlength="100" required
+                        value="{{ parameter.name }}">
+                    <div class="form-text">不超过100个字符</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label required">参数类型</label>
+                    <select class="form-select" name="parameter_type_id" required>
+                        <option value="">请选择参数类型</option>
+                        {% for type in parameter_types %}
+                        <option value="{{ type.id }}" {% if type.id==parameter.parameter_type_id %}selected{% endif %}>
+                            {{ type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label required">所属规则</label>
+                    <select class="form-select" name="rule_id" required>
+                        <option value="">请选择所属规则</option>
+                        {% for rule in rules %}
+                        <option value="{{ rule.id }}" {% if rule.id==parameter.rule_id %}selected{% endif %}>
+                            {{ rule.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label required">参数值</label>
+                    <input type="text" class="form-control" name="value" required value="{{ parameter.value }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">状态</label>
+                    <select class="form-select" name="status">
+                        <option value="启用" {% if parameter.status=='启用' %}selected{% endif %}>启用</option>
+                        <option value="禁用" {% if parameter.status=='禁用' %}selected{% endif %}>禁用</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">描述</label>
+                    <textarea class="form-control" name="description" rows="3"
+                        maxlength="500">{{ parameter.description }}</textarea>
+                    <div class="form-text">不超过500个字符</div>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-light ms-2" onclick="history.back()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="module">
+    import { api } from '/static/js/utils/request.js';
+
+    // 监听表单提交
+    document.getElementById('editForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        try {
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            const apiUrl = "{{ url_for('rules.update_parameter', id=parameter.id) }}";
+            const response = await api.put(apiUrl, data);
+
+            if (response.status === 'success') {
+                alert('更新成功');
+                const redirectUrl = "{{ url_for('rules.parameter_list') }}";
+                location.href = redirectUrl;
+            } else {
+                alert(response.message || '更新失败');
+            }
+        } catch (error) {
+            console.error('更新参数失败:', error);
+            alert('更新参数失败');
+        }
+    });
+</script>
+{% endblock %}

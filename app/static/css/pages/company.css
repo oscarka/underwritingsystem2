@@ -1,0 +1,123 @@
+/* 引入基础组件样式 */
+@import url('../base/variables.css');
+@import url('../base/layout.css');
+@import url('../components/buttons.css');
+@import url('../components/forms.css');
+@import url('../components/tables.css');
+@import url('../components/modals.css');
+@import url('../components/badges.css');
+
+/* 保险公司管理页面特定样式 */
+.company-page {
+    padding: var(--spacing-lg);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+}
+
+/* 搜索表单样式 */
+.search-form {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.form-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+}
+
+/* 表格容器样式 */
+.table-container {
+    background: var(--card-background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.enabled {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.status-badge.disabled {
+    background-color: var(--danger-light);
+    color: var(--danger);
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.action-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 模态框样式扩展 */
+.modal-content {
+    border-radius: var(--border-radius-lg);
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-label.required::after {
+    content: '*';
+    color: var(--danger);
+    margin-left: 4px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .company-page {
+        padding: var(--spacing-md);
+    }
+
+    .search-form {
+        padding: var(--spacing-md);
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+}

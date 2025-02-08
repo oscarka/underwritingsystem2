@@ -1,0 +1,127 @@
+{% extends "base/crud_template.html" %}
+
+{% block title %}疾病管理{% endblock %}
+
+{% block content %}
+{{ super() }}
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+    // 风险等级格式化
+    function riskLevelFormatter(value) {
+        const levelMap = {
+            'high': '高风险',
+            'medium': '中风险',
+            'low': '低风险'
+        };
+        return `<span class="status-badge ${value}">${levelMap[value] || value}</span>`;
+    }
+
+    // 操作按钮格式化
+    function operateFormatter(value, row) {
+        return `
+            <div class="action-buttons">
+                <button class="btn btn-link p-0 mx-1" data-action="view" data-id="${row.id}" title="查看">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="edit" data-id="${row.id}" title="编辑">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link p-0 mx-1" data-action="delete" data-id="${row.id}" title="删除">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    // 页面配置
+    const crud_config = {
+        debug: false,
+        show_toolbar: true,
+        show_create_button: true,
+        create_button_text: '新增疾病',
+        show_batch_delete: true,
+        search_fields: [
+            {
+                label: '疾病名称',
+                name: 'name',
+                placeholder: '请输入疾病名称'
+            },
+            {
+                label: '疾病代码',
+                name: 'code',
+                placeholder: '请输入疾病代码'
+            },
+            {
+                label: '风险等级',
+                name: 'risk_level',
+                type: 'select',
+                options: [
+                    { value: '', text: '全部' },
+                    { value: 'high', text: '高风险' },
+                    { value: 'medium', text: '中风险' },
+                    { value: 'low', text: '低风险' }
+                ]
+            }
+        ],
+        table_columns: [
+            { field: 'name', title: '疾病名称' },
+            { field: 'code', title: '疾病代码' },
+            { field: 'category', title: '疾病类别' },
+            { field: 'risk_level', title: '风险等级', formatter: 'riskLevelFormatter' },
+            { field: 'created_at', title: '创建时间', sortable: true },
+            { field: 'operate', title: '操作', align: 'center', formatter: 'operateFormatter' }
+        ],
+        form_fields: [
+            {
+                label: '疾病名称',
+                name: 'name',
+                required: true,
+                placeholder: '请输入疾病名称'
+            },
+            {
+                label: '疾病代码',
+                name: 'code',
+                required: true,
+                placeholder: '请输入疾病代码'
+            },
+            {
+                label: '疾病类别',
+                name: 'category',
+                required: true,
+                placeholder: '请输入疾病类别'
+            },
+            {
+                label: '风险等级',
+                name: 'risk_level',
+                type: 'select',
+                required: true,
+                options: [
+                    { value: 'high', text: '高风险' },
+                    { value: 'medium', text: '中风险' },
+                    { value: 'low', text: '低风险' }
+                ]
+            },
+            {
+                label: '描述',
+                name: 'description',
+                type: 'textarea',
+                rows: 3,
+                placeholder: '请输入疾病描述'
+            }
+        ],
+        endpoints: {
+            list: '/rules/disease/api/diseases',
+            create: '/rules/disease/api/diseases',
+            update: '/rules/disease/api/diseases/{id}',
+            delete: '/rules/disease/api/diseases/{id}',
+            view: '/rules/disease/api/diseases/{id}'
+        }
+    };
+
+    // 设置页面配置
+    document.querySelector('.crud-container').dataset.crudConfig = JSON.stringify(crud_config);
+</script>
+{% endblock %}

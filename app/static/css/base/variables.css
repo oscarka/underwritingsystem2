@@ -1,0 +1,35 @@
+:root {
+    /* Colors */
+    --apple-primary: #0066CC;
+    --apple-primary-hover: #0055B3;
+    --apple-success: #34C759;
+    --apple-warning: #FF9500;
+    --apple-danger: #FF3B30;
+    --apple-dark: #1D1D1F;
+    --apple-gray: #86868B;
+    --apple-light-gray: #F5F5F7;
+    --apple-border: #D2D2D7;
+    --apple-background: #F5F5F7;
+
+    /* Typography */
+    --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Effects */
+    --apple-radius: 8px;
+    --apple-radius-sm: 6px;
+    --apple-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --apple-shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --apple-transition: all 0.2s ease;
+}

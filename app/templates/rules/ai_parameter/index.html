@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}智核参数管理{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ai_parameter.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ai-parameter-page">
+    <div class="page-header">
+        <h2>智核参数列表</h2>
+        <a href="{{ url_for('rules.create_parameter') }}" class="btn btn-primary">新增参数</a>
+    </div>
+
+    <div class="search-section">
+        <form id="searchForm" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">参数名称</label>
+                <input type="text" class="form-control" name="name" placeholder="请输入参数名称">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">参数类型</label>
+                <select class="form-select" name="parameter_type_id">
+                    <option value="">全部</option>
+                    {% for type in parameter_types %}
+                    <option value="{{ type.id }}">{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">状态</label>
+                <select class="form-select" name="status">
+                    <option value="">全部</option>
+                    <option value="启用">启用</option>
+                    <option value="禁用">禁用</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">查询</button>
+                <button type="reset" class="btn btn-light">重置</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>参数名称</th>
+                            <th>参数类型</th>
+                            <th>参数值</th>
+                            <th>所属规则</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parameterTableBody">
+                        <!-- 数据将通过JS动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="module">
+    import { api } from '/static/js/utils/request.js';
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function () {
+        loadParameters();
+
+        // 监听搜索表单提交
+        document.getElementById('searchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            loadParameters();
+        });
+
+        // 监听重置按钮点击
+        document.getElementById('searchForm').addEventListener('reset', function (e) {
+            setTimeout(loadParameters, 0);
+        });
+    });
+
+    // 加载参数列表
+    async function loadParameters() {
+        try {
+            const queryString = new URLSearchParams(new FormData(document.getElementById('searchForm'))).toString();
+            const response = await api.get(`{{ url_for('rules.get_parameters') }}?${queryString}`);
+
+            if (response.status === 'success') {
+                renderParameterList(response.data);
+            } else {
+                alert(response.message || '加载参数列表失败');
+            }
+        } catch (error) {
+            console.error('加载参数列表失败:', error);
+            alert('加载参数列表失败');
+        }
+    }
+
+    // 渲染参数列表
+    function renderParameterList(parameters) {
+        const tbody = document.getElementById('parameterTableBody');
+        tbody.innerHTML = parameters.map(parameter => `
+            <tr>
+                <td>${parameter.name}</td>
+                <td>${parameter.parameter_type?.name || '-'}</td>
+                <td>${parameter.value || '-'}</td>
+                <td>${parameter.rule?.name || '-'}</td>
+                <td>
+                    <span class="status-${parameter.status === '启用' ? 'enabled' : 'disabled'}">
+                        ${parameter.status}
+                    </span>
+                </td>
+                <td>${parameter.created_at_str}</td>
+                <td>${parameter.updated_at_str}</td>
+                <td>
+                    <button onclick="viewParameter(${parameter.id})" class="btn-view">查看</button>
+                    <button onclick="editParameter(${parameter.id})" class="btn-edit">编辑</button>
+                    <button onclick="deleteParameter(${parameter.id})" class="btn-delete">删除</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // 查看参数
+    window.viewParameter = function (id) {
+        const viewUrl = `/rules/parameters/${id}`;
+        location.href = viewUrl;
+    }
+
+    // 编辑参数
+    window.editParameter = function (id) {
+        const editUrl = `/rules/parameters/${id}/edit`;
+        location.href = editUrl;
+    }
+
+    // 删除参数
+    window.deleteParameter = async function (id) {
+        if (!confirm('确定要删除该参数吗？')) {
+            return;
+        }
+
+        try {
+            const deleteUrl = `/rules/api/parameters/${id}`;
+            const response = await api.delete(deleteUrl);
+
+            if (response.status === 'success') {
+                alert('删除成功');
+                loadParameters();
+            } else {
+                alert(response.message || '删除失败');
+            }
+        } catch (error) {
+            console.error('删除参数失败:', error);
+            alert('删除参数失败');
+        }
+    }
+</script>
+{% endblock %}

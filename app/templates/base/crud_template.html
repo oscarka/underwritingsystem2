@@ -1,0 +1,338 @@
+{% extends "base/basic_template.html" %}
+
+{# 设置默认的 crud_config #}
+{% set crud_config = crud_config|default({
+"debug": false,
+"autoInit": true,
+"show_toolbar": false,
+"show_create_button": false,
+"show_batch_delete": false,
+"show_import": false,
+"show_export": false,
+"show_checkbox": false,
+"table": {
+"columns": [],
+"url": ""
+},
+"form": {
+"fields": []
+},
+"search": {
+"fields": []
+},
+"endpoints": {
+"list": "",
+"create": "",
+"update": "",
+"delete": "",
+"view": ""
+}
+}) %}
+
+{% block content %}
+<div class="crud-container" data-crud-config='{{ crud_config|tojson|safe }}'>
+    {# 工具栏 #}
+    <div class="crud-toolbar">
+        {% block toolbar %}
+        {% if crud_config.show_toolbar %}
+        <div class="btn-group">
+            {% if crud_config.show_create_button %}
+            <button type="button" class="btn btn-primary" data-action="create" data-permission="create">
+                <i class="bi bi-plus"></i> {{ crud_config.create_button_text|default('新增') }}
+            </button>
+            {% endif %}
+
+            {% if crud_config.show_batch_delete %}
+            <button type="button" class="btn btn-danger" data-action="batch-delete" data-permission="delete">
+                <i class="bi bi-trash"></i> {{ crud_config.batch_delete_text|default('批量删除') }}
+            </button>
+            {% endif %}
+
+            {% if crud_config.show_import %}
+            <button type="button" class="btn btn-success" data-action="import" data-permission="import">
+                <i class="bi bi-file-earmark-arrow-up"></i> {{ crud_config.import_text|default('导入') }}
+            </button>
+            {% endif %}
+
+            {% if crud_config.show_export %}
+            <button type="button" class="btn btn-info" data-action="export" data-permission="export">
+                <i class="bi bi-file-earmark-arrow-down"></i> {{ crud_config.export_text|default('导出') }}
+            </button>
+            {% endif %}
+
+            {% if crud_config.extra_buttons %}
+            {% for button in crud_config.extra_buttons %}
+            <button type="button" class="btn {{ button.class }}" data-action="{{ button.action }}"
+                data-permission="{{ button.permission }}" {% if button.title %}title="{{ button.title }}" {% endif %} {%
+                if button.disabled %}disabled{% endif %}>
+                {% if button.icon %}<i class="{{ button.icon }}"></i>{% endif %}
+                {{ button.text }}
+            </button>
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    {# 搜索区域 #}
+    <div class="search-area">
+        {% block search %}
+        {% if crud_config.search and crud_config.search.fields %}
+        <form class="search-form" data-component="search">
+            <div class="row g-3">
+                {% for field in crud_config.search.fields %}
+                <div class="col-md-{{ field.col|default(3) }}">
+                    {% if field.type == 'select' %}
+                    <select class="form-select" name="{{ field.name }}" {% if field.placeholder
+                        %}data-placeholder="{{ field.placeholder }}" {% endif %}>
+                        <option value="">{{ field.placeholder|default('请选择' + field.label) }}</option>
+                        {% for option in field.options %}
+                        <option value="{{ option.value }}">{{ option.text }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="{{ field.type|default('text') }}" class="form-control" name="{{ field.name }}"
+                        placeholder="{{ field.placeholder|default('请输入' + field.label) }}">
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary" data-action="search">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-action="reset">
+                        <i class="bi bi-arrow-counterclockwise"></i> 重置
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    {# 表格区域 #}
+    <div class="table-area">
+        {% block table %}
+        {% if crud_config.table and crud_config.table.columns %}
+        <table class="table" data-component="table">
+            <thead>
+                <tr>
+                    {% if crud_config.show_checkbox %}
+                    <th data-checkbox="true"></th>
+                    {% endif %}
+
+                    {% for column in crud_config.table.columns %}
+                    <th data-field="{{ column.field }}" {% if column.sortable %}data-sortable="true" {% endif %} {% if
+                        column.align %}data-align="{{ column.align }}" {% endif %} {% if column.formatter
+                        %}data-formatter="{{ column.formatter }}" {% endif %}>
+                        {{ column.title }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+        </table>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    {# 表单模态框 #}
+    {% block modal %}
+    {% if crud_config.form and crud_config.form.fields %}
+    <div class="modal fade" id="formModal" tabindex="-1" data-component="form">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        {% for field in crud_config.form.fields %}
+                        <div class="mb-3">
+                            <label class="form-label {% if field.required %}required{% endif %}">
+                                {{ field.label }}
+                            </label>
+
+                            {% if field.type == 'select' %}
+                            <select class="form-select" name="{{ field.name }}" {% if field.required %}required{% endif
+                                %} {% if field.disabled %}disabled{% endif %}>
+                                {% for option in field.options %}
+                                <option value="{{ option.value }}">{{ option.text }}</option>
+                                {% endfor %}
+                            </select>
+
+                            {% elif field.type == 'textarea' %}
+                            <textarea class="form-control" name="{{ field.name }}" rows="{{ field.rows|default(3) }}" {%
+                                if field.required %}required{% endif %} {% if field.disabled %}disabled{% endif %} {% if
+                                field.placeholder %}placeholder="{{ field.placeholder }}" {% endif %} {% if
+                                field.maxlength %}maxlength="{{ field.maxlength }}" {% endif %}></textarea>
+
+                            {% else %}
+                            <input type="{{ field.type|default('text') }}" class="form-control" name="{{ field.name }}"
+                                {% if field.required %}required{% endif %} {% if field.disabled %}disabled{% endif %} {%
+                                if field.placeholder %}placeholder="{{ field.placeholder }}" {% endif %} {% if
+                                field.pattern %}pattern="{{ field.pattern }}" {% endif %} {% if field.maxlength
+                                %}maxlength="{{ field.maxlength }}" {% endif %} {% if field.min %}min="{{ field.min }}"
+                                {% endif %} {% if field.max %}max="{{ field.max }}" {% endif %}>
+                            {% endif %}
+
+                            {% if field.help %}
+                            <div class="form-text">{{ field.help }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" data-action="save">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# 导入模态框 #}
+    {% if crud_config.show_import %}
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">导入数据</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm">
+                        <div class="mb-3">
+                            <label class="form-label required">选择文件</label>
+                            <input type="file" class="form-control" name="file" accept=".xlsx,.xls,.csv" required>
+                            {% if crud_config.import_template_url %}
+                            <div class="form-text">
+                                请下载<a href="{{ crud_config.import_template_url }}"
+                                    target="_blank">导入模板</a>，按照模板格式填写数据后上传。
+                            </div>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" data-action="import-submit">开始导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endblock %}
+</div>
+{% endblock %}
+
+{% block css %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/toast.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/loading.css') }}">
+{% endblock %}
+
+{% block js %}
+{{ super() }}
+<script>
+    // 确保所有必要的组件都已加载
+    const requiredScripts = [
+        '{{ url_for("static", filename="js/core/EventBus.js") }}',
+        '{{ url_for("static", filename="js/core/BaseComponent.js") }}',
+        'https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.js',
+        '{{ url_for("static", filename="js/core/CrudCoordinator.js") }}',
+        '{{ url_for("static", filename="js/core/TableComponent.js") }}',
+        '{{ url_for("static", filename="js/core/FormComponent.js") }}',
+        '{{ url_for("static", filename="js/components/Toast.js") }}'
+    ];
+
+    // 按顺序加载脚本
+    async function loadScripts() {
+        for (const src of requiredScripts) {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+    }
+
+    // 初始化CRUD
+    async function initializeCrud() {
+        const container = document.querySelector('.crud-container');
+        if (!container) {
+            console.warn('No .crud-container found');
+            return;
+        }
+
+        try {
+            // 获取并解析配置
+            const config = JSON.parse(container.dataset.crudConfig || '{}');
+            console.log('Parsed CRUD config:', config);
+
+            // 确保EventBus实例存在
+            if (!window.eventBus) {
+                window.eventBus = new EventBus();
+            }
+
+            // 创建CRUD协调器实例
+            window.crud = new CrudCoordinator(config);
+
+            // 初始化组件
+            const components = {};
+
+            // 表格组件
+            const tableEl = container.querySelector('[data-component="table"]');
+            if (tableEl && config.table) {
+                components.table = new TableComponent(tableEl, config.table);
+            }
+
+            // 表单组件
+            const formEl = container.querySelector('[data-component="form"]');
+            if (formEl && config.form) {
+                components.form = new FormComponent(formEl, config.form);
+            }
+
+            // 搜索组件
+            const searchEl = container.querySelector('[data-component="search"]');
+            if (searchEl && config.search) {
+                components.search = new FormComponent(searchEl, config.search);
+            }
+
+            // 其他组件
+            components.toast = new Toast(config.toast || {});
+
+            // 将组件实例添加到CRUD协调器
+            window.crud.components = components;
+
+            // 触发初始化完成事件
+            window.eventBus.emit('crud:initialized', { crud: window.crud });
+
+            console.log('CRUD initialization completed');
+        } catch (error) {
+            console.error('Error initializing CRUD:', error);
+        }
+    }
+
+    // 主函数
+    async function main() {
+        try {
+            // 先加载所有脚本
+            await loadScripts();
+            // 然后初始化CRUD
+            await initializeCrud();
+        } catch (error) {
+            console.error('Failed to initialize:', error);
+        }
+    }
+
+    // 执行主函数
+    main();
+</script>
+{% endblock %}

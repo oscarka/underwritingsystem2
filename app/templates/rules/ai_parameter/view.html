@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}智核参数详情{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/ai_parameter.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ai-parameter-page">
+    <div class="page-header">
+        <h2>智核参数详情</h2>
+        <div>
+            <a href="{{ url_for('rules.edit_parameter', id=parameter.id) }}" class="btn btn-primary">编辑</a>
+            <a href="{{ url_for('rules.parameter_list') }}" class="btn btn-light ms-2">返回列表</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>参数名称</label>
+                        <div class="value">{{ parameter.name }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>参数类型</label>
+                        <div class="value">{{ parameter.parameter_type.name if parameter.parameter_type else '-' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>所属规则</label>
+                        <div class="value">{{ parameter.rule.name if parameter.rule else '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>参数值</label>
+                        <div class="value">{{ parameter.value or '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>状态</label>
+                        <div class="value">
+                            <span class="status-{{ parameter.status == '启用' and 'enabled' or 'disabled' }}">
+                                {{ parameter.status }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>创建时间</label>
+                        <div class="value">{{ parameter.created_at_str }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-item">
+                        <label>更新时间</label>
+                        <div class="value">{{ parameter.updated_at_str or '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="detail-item">
+                        <label>描述</label>
+                        <div class="value">{{ parameter.description or '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

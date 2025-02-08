@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}核保问题配置{% endblock %}
+
+{% block css %}
+<style>
+    .required::after {
+        content: " *";
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">核保问题配置</h5>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addQuestionModal">新增问题</button>
+        </div>
+
+        <!-- 搜索表单 -->
+        <form id="searchForm" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="content" placeholder="问题内容"
+                    value="{{ request.args.get('content', '') }}">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="type">
+                    <option value="">问题类型</option>
+                    {% for type in question_types %}
+                    <option value="{{ type.id }}" {{ 'selected' if request.args.get('type')==type.id|string }}>{{
+                        type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="rule_id">
+                    <option value="">所属规则</option>
+                    {% for rule in rules %}
+                    <option value="{{ rule.id }}" {{ 'selected' if request.args.get('rule_id')==rule.id|string }}>{{
+                        rule.name }} ({{ rule.version }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary me-2">查询</button>
+                <button type="reset" class="btn btn-light">重置</button>
+            </div>
+        </form>
+
+        <!-- 问题列表 -->
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>问题内容</th>
+                        <th>问题类型</th>
+                        <th>所属规则</th>
+                        <th>是否必填</th>
+                        <th>排序</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in questions %}
+                    <tr>
+                        <td>{{ question.content }}</td>
+                        <td>{{ question.type }}</td>
+                        <td>{{ question.rule.name }} ({{ question.rule.version }})</td>
+                        <td>{{ '是' if question.required else '否' }}</td>
+                        <td>{{ question.order }}</td>
+                        <td>{{ question.created_at_str }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1"
+                                onclick="editQuestion({{ question.id }})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                onclick="deleteQuestion({{ question.id }})">删除</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 新增问题模态框 -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增问题</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addQuestionForm">
+                    <div class="mb-3">
+                        <label class="form-label required">问题内容</label>
+                        <textarea class="form-control" name="content" rows="3" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required">问题类型</label>
+                        <select class="form-select" name="type" required>
+                            <option value="">请选择问题类型</option>
+                            {% for type in question_types %}
+                            <option value="{{ type.id }}">{{ type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required">所属规则</label>
+                        <select class="form-select" name="rule_id" required>
+                            <option value="">请选择所属规则</option>
+                            {% for rule in rules %}
+                            <option value="{{ rule.id }}">{{ rule.name }} ({{ rule.version }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">选项列表</label>
+                        <div id="optionList">
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" name="options[]" placeholder="选项内容">
+                                <button type="button" class="btn btn-outline-danger"
+                                    onclick="removeOption(this)">删除</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                            onclick="addOption()">添加选项</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">排序</label>
+                        <input type="number" class="form-control" name="order" value="0" min="0">
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="required" id="required" checked>
+                            <label class="form-check-label" for="required">必填</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuestion()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑问题模态框 -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑问题</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editQuestionForm">
+                    <input type="hidden" name="id">
+                    <div class="mb-3">
+                        <label class="form-label required">问题内容</label>
+                        <textarea class="form-control" name="content" rows="3" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required">问题类型</label>
+                        <select class="form-select" name="type" required>
+                            <option value="">请选择问题类型</option>
+                            {% for type in question_types %}
+                            <option value="{{ type.id }}">{{ type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required">所属规则</label>
+                        <select class="form-select" name="rule_id" required>
+                            <option value="">请选择所属规则</option>
+                            {% for rule in rules %}
+                            <option value="{{ rule.id }}">{{ rule.name }} ({{ rule.version }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">选项列表</label>
+                        <div id="editOptionList">
+                            <!-- 选项列表将通过JavaScript动态添加 -->
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                            onclick="addEditOption()">添加选项</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">排序</label>
+                        <input type="number" class="form-control" name="order" value="0" min="0">
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="required" id="editRequired">
+                            <label class="form-check-label" for="editRequired">必填</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateQuestion()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 添加选项
+    function addOption() {
+        const optionList = document.getElementById('optionList');
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'input-group mb-2';
+        optionDiv.innerHTML = `
+            <input type="text" class="form-control" name="options[]" placeholder="选项内容">
+            <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">删除</button>
+        `;
+        optionList.appendChild(optionDiv);
+    }
+
+    // 删除选项
+    function removeOption(button) {
+        button.parentElement.remove();
+    }
+
+    // 添加编辑选项
+    function addEditOption() {
+        const optionList = document.getElementById('editOptionList');
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'input-group mb-2';
+        optionDiv.innerHTML = `
+            <input type="text" class="form-control" name="options[]" placeholder="选项内容">
+            <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">删除</button>
+        `;
+        optionList.appendChild(optionDiv);
+    }
+
+    // 保存问题
+    async function saveQuestion() {
+        const form = document.getElementById('addQuestionForm');
+        const formData = new FormData(form);
+
+        // 收集选项数据
+        const options = [];
+        formData.getAll('options[]').forEach(option => {
+            if (option.trim()) {
+                options.push(option.trim());
+            }
+        });
+
+        const data = {
+            content: formData.get('content'),
+            type: formData.get('type'),
+            rule_id: formData.get('rule_id'),
+            options: options,
+            order: parseInt(formData.get('order')) || 0,
+            required: formData.get('required') === 'on'
+        };
+
+        try {
+            const response = await api.post('/rules/api/questions', data);
+            if (response.status === 'success') {
+                location.reload();
+            } else {
+                alert(response.message || '保存失败');
+            }
+        } catch (error) {
+            console.error('保存问题失败:', error);
+            alert('保存问题失败');
+        }
+    }
+
+    // 编辑问题
+    async function editQuestion(id) {
+        try {
+            const response = await api.get(`/rules/api/questions/${id}`);
+            if (response.status === 'success') {
+                const question = response.data;
+                const form = document.getElementById('editQuestionForm');
+
+                // 填充表单数据
+                form.querySelector('[name="id"]').value = question.id;
+                form.querySelector('[name="content"]').value = question.content;
+                form.querySelector('[name="type"]').value = question.type;
+                form.querySelector('[name="rule_id"]').value = question.rule_id;
+                form.querySelector('[name="order"]').value = question.order;
+                form.querySelector('[name="required"]').checked = question.required;
+
+                // 填充选项列表
+                const optionList = document.getElementById('editOptionList');
+                optionList.innerHTML = '';
+                if (question.options && question.options.length > 0) {
+                    question.options.forEach(option => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'input-group mb-2';
+                        optionDiv.innerHTML = `
+                            <input type="text" class="form-control" name="options[]" value="${option}" placeholder="选项内容">
+                            <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">删除</button>
+                        `;
+                        optionList.appendChild(optionDiv);
+                    });
+                }
+
+                // 显示模态框
+                new bootstrap.Modal(document.getElementById('editQuestionModal')).show();
+            } else {
+                alert(response.message || '获取问题数据失败');
+            }
+        } catch (error) {
+            console.error('获取问题数据失败:', error);
+            alert('获取问题数据失败');
+        }
+    }
+
+    // 更新问题
+    async function updateQuestion() {
+        const form = document.getElementById('editQuestionForm');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+
+        // 收集选项数据
+        const options = [];
+        formData.getAll('options[]').forEach(option => {
+            if (option.trim()) {
+                options.push(option.trim());
+            }
+        });
+
+        const data = {
+            content: formData.get('content'),
+            type: formData.get('type'),
+            rule_id: formData.get('rule_id'),
+            options: options,
+            order: parseInt(formData.get('order')) || 0,
+            required: formData.get('required') === 'on'
+        };
+
+        try {
+            const response = await api.put(`/rules/api/questions/${id}`, data);
+            if (response.status === 'success') {
+                location.reload();
+            } else {
+                alert(response.message || '更新失败');
+            }
+        } catch (error) {
+            console.error('更新问题失败:', error);
+            alert('更新问题失败');
+        }
+    }
+
+    // 删除问题
+    async function deleteQuestion(id) {
+        if (!confirm('确定要删除该问题吗？')) {
+            return;
+        }
+
+        try {
+            const response = await api.delete(`/rules/api/questions/${id}`);
+            if (response.status === 'success') {
+                location.reload();
+            } else {
+                alert(response.message || '删除失败');
+            }
+        } catch (error) {
+            console.error('删除问题失败:', error);
+            alert('删除问题失败');
+        }
+    }
+
+    // 监听表单重置
+    document.getElementById('searchForm').addEventListener('reset', function (e) {
+        setTimeout(() => {
+            this.submit();
+        }, 0);
+    });
+</script>
+{% endblock %}
