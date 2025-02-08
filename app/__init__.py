@@ -13,6 +13,7 @@ from app.models.auth.user import User
 import logging
 from logging.handlers import RotatingFileHandler
 import psutil
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -88,12 +89,12 @@ def create_app(config_class=None):
                 connection = db.engine.connect()
                 logger.info('数据库连接测试成功')
                 # 测试数据库读写
-                connection.execute('SELECT 1')
+                connection.execute(text('SELECT 1'))
                 logger.info('数据库读取测试成功')
                 # 测试数据库权限
-                connection.execute('CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY)')
+                connection.execute(text('CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY)'))
                 logger.info('数据库写入测试成功')
-                connection.execute('DROP TABLE IF EXISTS test_table')
+                connection.execute(text('DROP TABLE IF EXISTS test_table'))
                 connection.close()
             except Exception as e:
                 logger.error(f'数据库操作测试失败: {str(e)}')
