@@ -23,19 +23,6 @@ def create_app(config_class=None):
     app.config.from_object(config_class)
     logger.info(f'已加载配置: {config_class.__name__}')
     
-    # 添加健康检查端点
-    @app.route('/health')
-    def health_check():
-        logger.info('收到健康检查请求')
-        try:
-            # 检查数据库连接
-            db.session.execute('SELECT 1')
-            logger.info('健康检查通过')
-            return jsonify({"status": "healthy", "database": "connected"}), 200
-        except Exception as e:
-            logger.error(f'健康检查失败: {str(e)}')
-            return jsonify({"status": "unhealthy", "error": str(e)}), 500
-    
     # 初始化日志
     init_logging(app)
     logger.info('日志系统初始化完成')
@@ -105,6 +92,20 @@ def create_app(config_class=None):
     logger.info(f'开始注册核保规则蓝图: name={underwriting_bp.name}, url_prefix=/api/v1/underwriting')
     app.register_blueprint(underwriting_bp, url_prefix='/api/v1/underwriting')
     logger.info('核保规则蓝图注册完成')
+
+    # 添加健康检查端点（移到最后，确保所有初始化都完成）
+    @app.route('/health')
+    def health_check():
+        logger.info('收到健康检查请求')
+        try:
+            with app.app_context():
+                # 检查数据库连接
+                db.session.execute('SELECT 1')
+                logger.info('健康检查通过')
+                return jsonify({"status": "healthy", "database": "connected"}), 200
+        except Exception as e:
+            logger.error(f'健康检查失败: {str(e)}')
+            return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
     logger.info('应用初始化完成')
 
