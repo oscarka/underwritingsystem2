@@ -72,20 +72,31 @@ def create_app(config_class=None):
     
     # 配置数据库
     try:
-        database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
+        database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        logger.info(f'尝试连接数据库: {database_url}')
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        logger.info(f'数据库配置完成: {database_url}')
+        app.config['SQLALCHEMY_ECHO'] = True
         
         # 初始化数据库
         db.init_app(app)
+        with app.app_context():
+            try:
+                db.engine.connect()
+                logger.info('数据库连接测试成功')
+            except Exception as e:
+                logger.error(f'数据库连接测试失败: {str(e)}')
+                raise
         logger.info('数据库初始化完成')
         
     except Exception as e:
         logger.error(f'数据库初始化失败: {str(e)}')
         if os.environ.get('FLASK_ENV') == 'production':
+            logger.error('生产环境数据库连接失败，终止应用启动')
+            raise
+        else:
             logger.info('切换到SQLite数据库...')
             app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
             db.init_app(app)
