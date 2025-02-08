@@ -136,7 +136,7 @@ def create_app(config_class=None):
 
     # 配置日志
     if not app.debug and not app.testing:
-        if app.config['LOG_TO_STDOUT']:
+        if os.environ.get('LOG_TO_STDOUT', 'true').lower() == 'true':
             stream_handler = logging.StreamHandler()
             stream_handler.setFormatter(logging.Formatter(
                 '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
