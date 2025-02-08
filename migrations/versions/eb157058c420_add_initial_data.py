@@ -288,6 +288,15 @@ def upgrade():
         sa.Column('type_id', sa.Integer)
     )
     
+    # 先获取问题类型的ID
+    question_type_ids = {}
+    for code, name, _ in question_types_data:
+        result = connection.execute(
+            sa.text(f"SELECT id FROM question_type WHERE code = '{code}'")
+        ).fetchone()
+        if result:
+            question_type_ids[code] = result[0]
+    
     questions_data = [
         {
             'code': 'Q_1',
@@ -295,7 +304,7 @@ def upgrade():
             'attribute': 'P',
             'question_type': '1',
             'remark': '了解患者是否有高血压病史',
-            'type_id': 1  # BASIC 类型的ID
+            'type_id': question_type_ids['BASIC']
         },
         {
             'code': 'Q_2',
@@ -303,7 +312,7 @@ def upgrade():
             'attribute': 'P',
             'question_type': '1',
             'remark': '了解患者的治疗情况',
-            'type_id': 2  # MEDICAL 类型的ID
+            'type_id': question_type_ids['MEDICAL']
         },
         {
             'code': 'Q_3',
@@ -311,7 +320,7 @@ def upgrade():
             'attribute': 'P',
             'question_type': '1',
             'remark': '了解患者的血压控制情况',
-            'type_id': 2  # MEDICAL 类型的ID
+            'type_id': question_type_ids['MEDICAL']
         }
     ]
     
@@ -342,6 +351,15 @@ def upgrade():
         sa.Column('type_id', sa.Integer)
     )
     
+    # 获取结论类型的ID
+    conclusion_type_ids = {}
+    for code, name, _ in conclusion_types_data:
+        result = connection.execute(
+            sa.text(f"SELECT id FROM conclusion_type WHERE code = '{code}'")
+        ).fetchone()
+        if result:
+            conclusion_type_ids[code] = result[0]
+    
     conclusions_data = [
         {
             'code': 'C001',
@@ -349,7 +367,7 @@ def upgrade():
             'content': '可以标准费率承保',
             'decision': 'STANDARD',
             'em_value': 1.0,
-            'type_id': 1  # STANDARD 类型的ID
+            'type_id': conclusion_type_ids['STANDARD']
         },
         {
             'code': 'C002',
@@ -357,7 +375,31 @@ def upgrade():
             'content': '需要加费承保',
             'decision': 'SUBSTANDARD',
             'em_value': 1.5,
-            'type_id': 2  # SUBSTANDARD 类型的ID
+            'type_id': conclusion_type_ids['SUBSTANDARD']
+        },
+        {
+            'code': 'C003',
+            'name': '拒保',
+            'content': '不予承保',
+            'decision': 'DECLINE',
+            'em_value': 0.0,
+            'type_id': conclusion_type_ids['DECLINE']
+        },
+        {
+            'code': 'C004',
+            'name': '延期',
+            'content': '暂缓承保',
+            'decision': 'POSTPONE',
+            'em_value': 0.0,
+            'type_id': conclusion_type_ids['POSTPONE']
+        },
+        {
+            'code': 'C005',
+            'name': '除外责任',
+            'content': '承保但除外特定责任',
+            'decision': 'EXCLUSION',
+            'em_value': 1.0,
+            'type_id': conclusion_type_ids['EXCLUSION']
         }
     ]
     
