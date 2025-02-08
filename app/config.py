@@ -7,10 +7,10 @@ load_dotenv(os.path.join(os.path.dirname(basedir), '.env'))
 
 class Config:
     # 基础配置
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
+    SECRET_KEY = os.environ.get('RAILWAY_SECRET_KEY') or os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     
     # 数据库配置
-    database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'app.db')
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = database_url
