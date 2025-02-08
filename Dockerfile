@@ -33,6 +33,7 @@ ENV PYTHONUNBUFFERED=1
 ENV LOG_TO_STDOUT=true
 ENV PORT=5000
 ENV DATABASE_URL=${DATABASE_URL}
+ENV SQLALCHEMY_ECHO=1
 
 # 创建必要的目录
 RUN mkdir -p app/uploads app/static/admin logs && \
@@ -42,7 +43,9 @@ RUN mkdir -p app/uploads app/static/admin logs && \
 EXPOSE 5000
 
 # 启动命令
-CMD rm -f instance/app.db && \
+CMD sleep 10 && \
+    echo "Database URL: $DATABASE_URL" && \
+    rm -f instance/app.db && \
     python init_db.py && \
     flask db stamp head && \
     gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 
