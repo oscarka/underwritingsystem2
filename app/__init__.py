@@ -80,6 +80,17 @@ def create_app(config_class=None):
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         
+        # 检查是否有单独设置的数据库密码
+        postgres_password = os.environ.get('POSTGRES_PASSWORD')
+        if postgres_password and 'postgresql://' in database_url:
+            logger.info('检测到单独设置的数据库密码环境变量')
+            # 解析现有URL
+            parsed = urlparse(database_url)
+            # 重构URL，使用新密码
+            userpass = f"{parsed.username}:{postgres_password}" if parsed.username else f"postgres:{postgres_password}"
+            database_url = f"postgresql://{userpass}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
+            logger.info('已使用环境变量中的密码更新数据库URL')
+        
         # 打印数据库 URL（确保密码被隐藏）
         safe_url = database_url
         if '@' in safe_url:
