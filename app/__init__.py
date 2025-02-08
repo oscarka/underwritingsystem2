@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, redirect, url_for
+from flask import Flask, jsonify, redirect, url_for, send_from_directory
 from flask_cors import CORS
 from app.config import get_config
 from app.logging import init_logging
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(config_class=None):
     logger.info('开始创建Flask应用...')
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static')
     if config_class is None:
         config_class = get_config()
     app.config.from_object(config_class)
@@ -31,7 +31,16 @@ def create_app(config_class=None):
     # 添加根路由
     @app.route('/')
     def index():
-        return redirect('/login.html')
+        return redirect('/admin/index.html')
+    
+    # 添加静态文件路由
+    @app.route('/login.html')
+    def login_page():
+        return send_from_directory('static/admin', 'index.html')
+    
+    @app.route('/admin/<path:path>')
+    def serve_admin(path):
+        return send_from_directory('static/admin', path)
     
     # 配置 CORS - 开发环境允许所有来源
     CORS(app)
