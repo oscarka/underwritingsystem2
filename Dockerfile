@@ -27,7 +27,7 @@ COPY --from=frontend-builder /frontend/dist app/static/admin/
 
 # 设置环境变量
 ENV FLASK_APP=app
-ENV FLASK_ENV=production
+ENV FLASK_DEBUG=0
 ENV PYTHONUNBUFFERED=1
 ENV LOG_TO_STDOUT=true
 ENV PORT=5000
@@ -37,9 +37,6 @@ RUN mkdir -p app/uploads app/static/admin logs
 
 # 暴露端口
 EXPOSE 5000
-
-# 初始化数据库
-RUN flask db init
 
 # 启动命令
 CMD python manage.py db upgrade && \
