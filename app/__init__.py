@@ -82,20 +82,46 @@ def create_app(config_class=None):
         
         # 检查是否有单独设置的数据库密码
         postgres_password = os.environ.get('POSTGRES_PASSWORD')
+        
+        # 打印原始URL（隐藏密码）
+        safe_original_url = database_url
+        if '@' in safe_original_url:
+            user_pass = safe_original_url.split('@')[0]
+            if ':' in user_pass:
+                user = user_pass.split(':')[0].split('/')[-1]
+                safe_original_url = safe_original_url.replace(user_pass, f"{user}:****")
+        logger.info(f'原始数据库URL: {safe_original_url}')
+        
         if postgres_password and 'postgresql://' in database_url:
             logger.info('检测到单独设置的数据库密码环境变量')
             # 解析现有URL
             parsed = urlparse(database_url)
+            logger.info(f'URL解析结果: scheme={parsed.scheme}, hostname={parsed.hostname}, port={parsed.port}, path={parsed.path}, username={parsed.username}')
+            
             # 重构URL，使用新密码
             userpass = f"{parsed.username}:{postgres_password}" if parsed.username else f"postgres:{postgres_password}"
             database_url = f"postgresql://{userpass}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
             logger.info('已使用环境变量中的密码更新数据库URL')
         
-        # 打印数据库 URL（确保密码被隐藏）
+        # 打印最终数据库 URL（确保密码被隐藏）
         safe_url = database_url
         if '@' in safe_url:
-            safe_url = safe_url.split('@')[1]
-        logger.info(f'数据库 URL: postgresql://****@{safe_url}')
+            user_pass = safe_url.split('@')[0]
+            if ':' in user_pass:
+                user = user_pass.split(':')[0].split('/')[-1]
+                safe_url = safe_url.replace(user_pass, f"{user}:****")
+        logger.info(f'最终数据库URL: {safe_url}')
+        
+        # 添加连接参数日志
+        connect_args = {
+            'connect_timeout': 10,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+            'application_name': 'underwriting_system'
+        }
+        logger.info(f'数据库连接参数: {connect_args}')
         
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -108,13 +134,7 @@ def create_app(config_class=None):
             'pool_timeout': 30,
             'pool_recycle': 1800,
             'pool_pre_ping': True,
-            'connect_args': {
-                'connect_timeout': 10,
-                'keepalives': 1,
-                'keepalives_idle': 30,
-                'keepalives_interval': 10,
-                'keepalives_count': 5
-            }
+            'connect_args': connect_args
         }
         logger.info(f'数据库连接池配置: {pool_settings}')
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = pool_settings
