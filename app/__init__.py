@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect, url_for
 from flask_cors import CORS
 from app.config import get_config
 from app.logging import init_logging
@@ -27,6 +27,11 @@ def create_app(config_class=None):
     # 初始化日志
     init_logging(app)
     logger.info('日志系统初始化完成')
+    
+    # 添加根路由
+    @app.route('/')
+    def index():
+        return redirect('/login.html')
     
     # 配置 CORS - 开发环境允许所有来源
     CORS(app)
