@@ -12,6 +12,7 @@ from app.views.underwriting.ai_parameter import bp as ai_parameter_bp
 from app.models.auth.user import User
 import logging
 from logging.handlers import RotatingFileHandler
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -101,15 +102,33 @@ def create_app(config_class=None):
             with app.app_context():
                 # 检查数据库连接
                 db.session.execute('SELECT 1')
-                logger.info('健康检查通过')
-                return jsonify({
+                logger.info('数据库连接检查通过')
+                
+                # 记录服务器运行信息
+                process = psutil.Process()
+                memory_info = process.memory_info()
+                
+                response_data = {
                     "message": "Service is running",
-                    "status": "ok"
-                }), 200
+                    "status": "ok",
+                    "server_info": {
+                        "start_time": process.create_time(),
+                        "memory_usage": {
+                            "rss": memory_info.rss,
+                            "vms": memory_info.vms
+                        },
+                        "cpu_percent": process.cpu_percent(),
+                        "threads": process.num_threads()
+                    }
+                }
+                
+                logger.info(f'健康检查完成，服务运行正常: {response_data}')
+                return jsonify(response_data), 200
         except Exception as e:
-            logger.error(f'健康检查失败: {str(e)}')
+            error_msg = f'健康检查失败: {str(e)}'
+            logger.error(error_msg)
             return jsonify({
-                "message": str(e),
+                "message": error_msg,
                 "status": "error"
             }), 500
 
