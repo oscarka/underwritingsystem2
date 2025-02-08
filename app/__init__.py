@@ -13,7 +13,7 @@ from app.models.auth.user import User
 import logging
 from logging.handlers import RotatingFileHandler
 import psutil
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 import psycopg2
 from urllib.parse import urlparse
 
@@ -82,11 +82,24 @@ def create_app(config_class=None):
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_ECHO'] = True
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_size': 10,
+            'max_overflow': 20,
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+        }
         
         # 初始化数据库
         db.init_app(app)
         with app.app_context():
-            db.create_all()
+            # 检查表是否存在
+            inspector = inspect(db.engine)
+            if not inspector.get_table_names():
+                logger.info('数据库表不存在，开始创建...')
+                db.create_all()
+                logger.info('数据库表创建完成')
+            else:
+                logger.info('数据库表已存在，跳过创建')
         logger.info('数据库初始化完成')
         
     except Exception as e:
