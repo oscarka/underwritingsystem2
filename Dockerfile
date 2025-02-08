@@ -38,5 +38,10 @@ RUN mkdir -p app/uploads app/static/admin logs
 # 暴露端口
 EXPOSE 5000
 
+# 初始化数据库
+RUN flask db init
+
 # 启动命令
-CMD flask db upgrade && python init_db.py && gunicorn "app:create_app()" --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 
+CMD python manage.py db upgrade && \
+    python init_db.py && \
+    gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 
