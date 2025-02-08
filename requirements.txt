@@ -9,4 +9,5 @@ Flask-WTF==0.15.1
 Werkzeug==2.0.1
 Flask-CORS==3.0.10
 PyJWT==2.1.0
-psutil==5.9.0
+psutil==5.8.0
+SQLAlchemy==1.4.23

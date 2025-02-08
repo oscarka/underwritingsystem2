@@ -56,19 +56,39 @@ def create_app(config_class=None):
         logger.info(f'创建上传目录: {upload_dir}')
     
     # 配置数据库
-    database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    logger.info(f'数据库URI: {app.config["SQLALCHEMY_DATABASE_URI"]}')
+    try:
+        database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        logger.info(f'数据库配置完成: {database_url}')
+        
+        # 初始化数据库
+        logger.info('开始初始化数据库...')
+        db.init_app(app)
+        
+        # 测试数据库连接
+        with app.app_context():
+            db.engine.connect()
+            logger.info('数据库连接测试成功')
+            
+    except Exception as e:
+        logger.error(f'数据库初始化失败: {str(e)}')
+        # 如果是在生产环境，使用SQLite作为后备
+        if os.environ.get('FLASK_ENV') == 'production':
+            logger.info('切换到SQLite数据库...')
+            app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
+            db.init_app(app)
     
-    # 初始化扩展
-    logger.info('开始初始化扩展...')
-    db.init_app(app)
-    login_manager.init_app(app)
-    migrate.init_app(app, db)
-    logger.info('扩展初始化完成')
+    # 初始化其他扩展
+    logger.info('开始初始化其他扩展...')
+    try:
+        login_manager.init_app(app)
+        migrate.init_app(app, db)
+        logger.info('扩展初始化完成')
+    except Exception as e:
+        logger.error(f'扩展初始化失败: {str(e)}')
 
     # 配置user_loader
     @login_manager.user_loader
