@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from app.config import get_config
 from app.logging import init_logging
@@ -22,6 +22,11 @@ def create_app(config_class=None):
         config_class = get_config()
     app.config.from_object(config_class)
     logger.info(f'已加载配置: {config_class.__name__}')
+    
+    # 添加健康检查端点
+    @app.route('/health')
+    def health_check():
+        return jsonify({"status": "healthy"}), 200
     
     # 初始化日志
     init_logging(app)
