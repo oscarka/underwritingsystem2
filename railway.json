@@ -12,6 +12,7 @@
     "variables": {
         "FLASK_ENV": "production",
         "PYTHONUNBUFFERED": "1",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": "false"
+        "SQLALCHEMY_TRACK_MODIFICATIONS": "false",
+        "LOG_TO_STDOUT": "true"
     }
 }
