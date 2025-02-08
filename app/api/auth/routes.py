@@ -9,8 +9,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@bp.route('/login', methods=['POST'])
+@bp.route('/login', methods=['POST', 'HEAD'])
 def login():
+    if request.method == 'HEAD':
+        return '', 200
+        
     try:
         logger.info("收到登录请求")
         data = request.get_json()
