@@ -13,6 +13,7 @@ WORKDIR /app
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
     build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
@@ -25,8 +26,11 @@ COPY . .
 COPY --from=frontend-builder /frontend/dist app/static/admin/
 
 # 设置环境变量
+ENV FLASK_APP=app
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
+ENV LOG_TO_STDOUT=true
+ENV PORT=5000
 
 # 创建必要的目录
 RUN mkdir -p app/uploads app/static/admin logs
@@ -35,4 +39,4 @@ RUN mkdir -p app/uploads app/static/admin logs
 EXPOSE 5000
 
 # 启动命令
-CMD ["gunicorn", "app:create_app()", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "120"] 
+CMD flask db upgrade && python init_db.py && gunicorn "app:create_app()" --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 
