@@ -8,6 +8,18 @@ RUN npm run build
 
 # 后端构建阶段
 FROM python:3.9-slim
+
+# 构建参数
+ARG VERSION=dev
+ARG BUILD_DATE=unknown
+
+# 镜像标签
+LABEL maintainer="Your Name <your.email@example.com>" \
+    version=${VERSION} \
+    build-date=${BUILD_DATE} \
+    description="核保系统应用镜像" \
+    org.opencontainers.image.source="https://github.com/oscarka/underwritingsystem2"
+
 WORKDIR /app
 
 # 安装系统依赖
@@ -62,6 +74,10 @@ ENV DB_CONNECT_TIMEOUT=10 \
 # 创建必要的目录
 RUN mkdir -p app/uploads app/static/admin logs && \
     chmod -R 777 app/uploads logs
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # 暴露端口
 EXPOSE 5000
