@@ -89,8 +89,10 @@ def create_app(config_class=None):
             'pool_recycle': 300,
         }
         
-        # 初始化数据库
+        # 初始化数据库和迁移
         db.init_app(app)
+        migrate.init_app(app, db)
+        
         with app.app_context():
             # 检查表是否存在
             inspector = inspect(db.engine)
@@ -114,11 +116,11 @@ def create_app(config_class=None):
             logger.info('切换到SQLite数据库...')
             app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
             db.init_app(app)
+            migrate.init_app(app, db)
     
     # 初始化其他扩展
     try:
         login_manager.init_app(app)
-        migrate.init_app(app, db)
         logger.info('扩展初始化完成')
     except Exception as e:
         logger.error(f'扩展初始化失败: {str(e)}')
