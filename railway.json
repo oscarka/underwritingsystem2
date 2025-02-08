@@ -3,7 +3,7 @@
         "builder": "NIXPACKS"
     },
     "deploy": {
-        "startCommand": "python manage.py db upgrade && python init_db.py && gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --log-level debug",
+        "startCommand": "flask db upgrade && python init_db.py && gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --log-level debug",
         "healthcheckPath": "/health",
         "healthcheckTimeout": 30,
         "restartPolicyType": "ON_FAILURE",
@@ -15,6 +15,7 @@
         "PYTHONUNBUFFERED": "1",
         "SECRET_KEY": "railway-deployment-secret-key",
         "ADMIN_USERNAME": "admin",
-        "ADMIN_PASSWORD": "admin@railway2024"
+        "ADMIN_PASSWORD": "admin@railway2024",
+        "FLASK_APP": "app:create_app()"
     }
 }
