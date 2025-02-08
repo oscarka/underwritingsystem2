@@ -4,7 +4,8 @@ import logging
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import pool, create_engine
+from flask import current_app
 
 from alembic import context
 
@@ -21,7 +22,6 @@ logger = logging.getLogger('alembic.env')
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from flask import current_app
 config.set_main_option(
     'sqlalchemy.url',
     str(current_app.extensions['migrate'].db.engine.url).replace('%', '%%'))
@@ -72,10 +72,21 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
+    # 使用应用的数据库 URL
+    configuration = config.get_section(config.config_ini_section)
+    configuration['sqlalchemy.url'] = str(current_app.extensions['migrate'].db.engine.url)
+    
+    # 添加连接池配置
+    configuration['sqlalchemy.pool_size'] = '5'
+    configuration['sqlalchemy.max_overflow'] = '10'
+    configuration['sqlalchemy.pool_timeout'] = '30'
+    configuration['sqlalchemy.pool_recycle'] = '1800'
+    configuration['sqlalchemy.pool_pre_ping'] = 'true'
+    
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        configuration,
         prefix='sqlalchemy.',
-        poolclass=pool.NullPool,
+        poolclass=pool.QueuePool,  # 使用 QueuePool 替代 NullPool
     )
 
     with connectable.connect() as connection:
