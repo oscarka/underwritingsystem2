@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import logging
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -32,6 +33,24 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def get_sqlalchemy_config():
+    """从应用配置中获取SQLAlchemy配置"""
+    from app.config import Config
+    db_config = Config.get_database_config()
+    
+    # 基础配置
+    configuration = {
+        'sqlalchemy.url': db_config['url'],
+    }
+    
+    # 添加引擎选项
+    for key, value in db_config['engine_options'].items():
+        configuration[f'sqlalchemy.{key}'] = str(value)
+    
+    # 添加连接参数
+    configuration['sqlalchemy.connect_args'] = str(db_config['connect_args'])
+    
+    return configuration
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -43,23 +62,24 @@ def run_migrations_offline():
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
-    url = config.get_main_option("sqlalchemy.url")
+    configuration = get_sqlalchemy_config()
+    url = configuration['sqlalchemy.url']
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():
         context.run_migrations()
-
 
 def run_migrations_online():
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
 
     # this callback is used to prevent an auto-migration from being generated
@@ -72,21 +92,14 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    # 使用应用的数据库 URL
-    configuration = config.get_section(config.config_ini_section)
-    configuration['sqlalchemy.url'] = str(current_app.extensions['migrate'].db.engine.url)
+    # 获取配置
+    configuration = get_sqlalchemy_config()
     
-    # 添加连接池配置
-    configuration['sqlalchemy.pool_size'] = '5'
-    configuration['sqlalchemy.max_overflow'] = '10'
-    configuration['sqlalchemy.pool_timeout'] = '30'
-    configuration['sqlalchemy.pool_recycle'] = '1800'
-    configuration['sqlalchemy.pool_pre_ping'] = 'true'
-    
+    # 使用QueuePool
     connectable = engine_from_config(
         configuration,
         prefix='sqlalchemy.',
-        poolclass=pool.QueuePool,  # 使用 QueuePool 替代 NullPool
+        poolclass=pool.QueuePool
     )
 
     with connectable.connect() as connection:
@@ -99,7 +112,6 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()
