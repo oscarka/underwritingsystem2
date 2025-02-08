@@ -16,6 +16,7 @@ import psutil
 from sqlalchemy import text, inspect
 import psycopg2
 from urllib.parse import urlparse
+import sqlalchemy as sa
 
 logger = logging.getLogger(__name__)
 
@@ -78,36 +79,61 @@ def create_app(config_class=None):
         database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        logger.info(f'尝试连接数据库: {database_url}')
+        
+        # 打印数据库 URL（确保密码被隐藏）
+        safe_url = database_url
+        if '@' in safe_url:
+            safe_url = safe_url.split('@')[1]
+        logger.info(f'数据库 URL: postgresql://****@{safe_url}')
+        
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_ECHO'] = True
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'pool_size': 5,  # 减小连接池大小
-            'max_overflow': 10,  # 减小最大溢出连接数
-            'pool_timeout': 30,  # 连接池超时时间
-            'pool_recycle': 1800,  # 连接回收时间改为30分钟
-            'pool_pre_ping': True,  # 启用连接池预检
+        
+        # 记录连接池配置
+        pool_settings = {
+            'pool_size': 5,
+            'max_overflow': 10,
+            'pool_timeout': 30,
+            'pool_recycle': 1800,
+            'pool_pre_ping': True,
             'connect_args': {
-                'connect_timeout': 10,  # 连接超时时间
-                'keepalives': 1,  # 启用 TCP keepalive
-                'keepalives_idle': 30,  # TCP keepalive 空闲时间
-                'keepalives_interval': 10,  # TCP keepalive 间隔
-                'keepalives_count': 5  # TCP keepalive 重试次数
+                'connect_timeout': 10,
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5
             }
         }
+        logger.info(f'数据库连接池配置: {pool_settings}')
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = pool_settings
         
         # 初始化数据库和迁移
+        logger.info('开始初始化数据库...')
         db.init_app(app)
+        logger.info('数据库初始化完成')
+        
+        logger.info('开始初始化迁移...')
         migrate.init_app(app, db)
+        logger.info('迁移初始化完成')
         
         with app.app_context():
             # 检查数据库连接
             try:
-                db.engine.connect().close()
-                logger.info('数据库连接测试成功')
+                logger.info('尝试测试数据库连接...')
+                conn = db.engine.connect()
+                logger.info('数据库连接成功')
+                
+                # 执行简单查询
+                logger.info('执行测试查询...')
+                result = conn.execute(sa.text('SELECT 1')).scalar()
+                logger.info(f'测试查询结果: {result}')
+                
+                conn.close()
+                logger.info('数据库连接测试完成')
                 
                 # 检查表是否存在
+                logger.info('检查数据库表...')
                 inspector = inspect(db.engine)
                 existing_tables = inspector.get_table_names()
                 if not existing_tables:
@@ -118,6 +144,11 @@ def create_app(config_class=None):
                     logger.info(f'发现现有表: {", ".join(existing_tables)}')
             except Exception as conn_error:
                 logger.error(f'数据库连接测试失败: {str(conn_error)}')
+                logger.error(f'错误类型: {type(conn_error).__name__}')
+                if hasattr(conn_error, '__dict__'):
+                    logger.error(f'错误详情: {conn_error.__dict__}')
+                if hasattr(conn_error, 'orig'):
+                    logger.error(f'原始错误: {conn_error.orig}')
                 raise
                 
         logger.info('数据库初始化完成')
@@ -126,7 +157,9 @@ def create_app(config_class=None):
         logger.error(f'数据库初始化失败: {str(e)}')
         logger.error(f'错误类型: {type(e).__name__}')
         if hasattr(e, '__dict__'):
-            logger.error(f'错误详情: {str(e.__dict__)}')
+            logger.error(f'错误详情: {e.__dict__}')
+        if hasattr(e, 'orig'):
+            logger.error(f'原始错误: {e.orig}')
         if os.environ.get('FLASK_ENV') == 'production':
             logger.error('生产环境数据库连接失败，终止应用启动')
             raise
