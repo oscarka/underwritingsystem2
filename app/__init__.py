@@ -92,16 +92,23 @@ def create_app(config_class=None):
                 safe_original_url = safe_original_url.replace(user_pass, f"{user}:****")
         logger.info(f'原始数据库URL: {safe_original_url}')
         
-        if postgres_password and 'postgresql://' in database_url:
-            logger.info('检测到单独设置的数据库密码环境变量')
-            # 解析现有URL
-            parsed = urlparse(database_url)
-            logger.info(f'URL解析结果: scheme={parsed.scheme}, hostname={parsed.hostname}, port={parsed.port}, path={parsed.path}, username={parsed.username}')
-            
-            # 重构URL，使用新密码
-            userpass = f"{parsed.username}:{postgres_password}" if parsed.username else f"postgres:{postgres_password}"
-            database_url = f"postgresql://{userpass}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
-            logger.info('已使用环境变量中的密码更新数据库URL')
+        # 解析数据库URL
+        parsed = urlparse(database_url)
+        logger.info(f'URL解析结果: scheme={parsed.scheme}, hostname={parsed.hostname}, port={parsed.port}, path={parsed.path}, username={parsed.username}')
+        
+        # 如果没有用户名，使用默认用户名
+        if not parsed.username:
+            logger.info('未检测到用户名，使用默认用户名postgres')
+            parsed = parsed._replace(username='postgres')
+        
+        # 使用环境变量中的密码或URL中的密码
+        db_password = postgres_password if postgres_password else parsed.password
+        if not db_password:
+            logger.error('未找到数据库密码')
+            raise ValueError('数据库密码未设置')
+        
+        # 重构数据库URL
+        database_url = f"postgresql://{parsed.username}:{db_password}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
         
         # 打印最终数据库 URL（确保密码被隐藏）
         safe_url = database_url
@@ -112,16 +119,42 @@ def create_app(config_class=None):
                 safe_url = safe_url.replace(user_pass, f"{user}:****")
         logger.info(f'最终数据库URL: {safe_url}')
         
-        # 添加连接参数日志
+        # 添加连接参数
         connect_args = {
             'connect_timeout': 10,
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
             'keepalives_count': 5,
-            'application_name': 'underwriting_system'
+            'application_name': 'underwriting_system',
+            'client_encoding': 'utf8',
+            'sslmode': 'require'  # 添加SSL连接要求
         }
         logger.info(f'数据库连接参数: {connect_args}')
+        
+        # 尝试直接使用psycopg2测试连接
+        try:
+            logger.info('使用psycopg2直接测试数据库连接...')
+            test_conn = psycopg2.connect(
+                dbname=parsed.path[1:],
+                user=parsed.username,
+                password=db_password,
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+                **connect_args
+            )
+            logger.info('psycopg2直接连接测试成功')
+            with test_conn.cursor() as cur:
+                cur.execute('SELECT version()')
+                version = cur.fetchone()[0]
+                logger.info(f'PostgreSQL版本: {version}')
+            test_conn.close()
+        except Exception as psycopg2_error:
+            logger.error(f'psycopg2直接连接测试失败: {str(psycopg2_error)}')
+            if hasattr(psycopg2_error, 'pgcode'):
+                logger.error(f'PostgreSQL错误代码: {psycopg2_error.pgcode}')
+            if hasattr(psycopg2_error, 'pgerror'):
+                logger.error(f'PostgreSQL错误信息: {psycopg2_error.pgerror}')
         
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
