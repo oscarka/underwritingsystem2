@@ -83,10 +83,18 @@ def create_app(config_class=None):
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_ECHO'] = True
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'pool_size': 10,
-            'max_overflow': 20,
-            'pool_pre_ping': True,
-            'pool_recycle': 300,
+            'pool_size': 5,  # 减小连接池大小
+            'max_overflow': 10,  # 减小最大溢出连接数
+            'pool_timeout': 30,  # 连接池超时时间
+            'pool_recycle': 1800,  # 连接回收时间改为30分钟
+            'pool_pre_ping': True,  # 启用连接池预检
+            'connect_args': {
+                'connect_timeout': 10,  # 连接超时时间
+                'keepalives': 1,  # 启用 TCP keepalive
+                'keepalives_idle': 30,  # TCP keepalive 空闲时间
+                'keepalives_interval': 10,  # TCP keepalive 间隔
+                'keepalives_count': 5  # TCP keepalive 重试次数
+            }
         }
         
         # 初始化数据库和迁移
@@ -94,14 +102,24 @@ def create_app(config_class=None):
         migrate.init_app(app, db)
         
         with app.app_context():
-            # 检查表是否存在
-            inspector = inspect(db.engine)
-            if not inspector.get_table_names():
-                logger.info('数据库表不存在，开始创建...')
-                db.create_all()
-                logger.info('数据库表创建完成')
-            else:
-                logger.info('数据库表已存在，跳过创建')
+            # 检查数据库连接
+            try:
+                db.engine.connect().close()
+                logger.info('数据库连接测试成功')
+                
+                # 检查表是否存在
+                inspector = inspect(db.engine)
+                existing_tables = inspector.get_table_names()
+                if not existing_tables:
+                    logger.info('数据库表不存在，开始创建...')
+                    db.create_all()
+                    logger.info('数据库表创建完成')
+                else:
+                    logger.info(f'发现现有表: {", ".join(existing_tables)}')
+            except Exception as conn_error:
+                logger.error(f'数据库连接测试失败: {str(conn_error)}')
+                raise
+                
         logger.info('数据库初始化完成')
         
     except Exception as e:
@@ -113,7 +131,7 @@ def create_app(config_class=None):
             logger.error('生产环境数据库连接失败，终止应用启动')
             raise
         else:
-            logger.info('切换到SQLite数据库...')
+            logger.warning('切换到SQLite数据库...')
             app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
             db.init_app(app)
             migrate.init_app(app, db)
