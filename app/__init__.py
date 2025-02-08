@@ -31,7 +31,10 @@ def create_app(config_class=None):
     # 添加根路由
     @app.route('/')
     def index():
-        return redirect('/admin/index.html')
+        return jsonify({
+            "status": "ok",
+            "message": "Service is running"
+        }), 200
     
     # 添加静态文件路由
     @app.route('/login.html')
@@ -108,43 +111,13 @@ def create_app(config_class=None):
     app.register_blueprint(underwriting_bp, url_prefix='/api/v1/underwriting')
     logger.info('核保规则蓝图注册完成')
 
-    # 添加健康检查端点（移到最后，确保所有初始化都完成）
-    @app.route('/health', methods=['GET', 'HEAD'])
+    # 添加健康检查端点
+    @app.route('/health')
     def health_check():
-        logger.info('收到健康检查请求')
-        try:
-            with app.app_context():
-                # 检查数据库连接
-                db.session.execute('SELECT 1')
-                logger.info('数据库连接检查通过')
-                
-                # 记录服务器运行信息
-                process = psutil.Process()
-                memory_info = process.memory_info()
-                
-                response_data = {
-                    "message": "Service is running",
-                    "status": "ok",
-                    "server_info": {
-                        "start_time": process.create_time(),
-                        "memory_usage": {
-                            "rss": memory_info.rss,
-                            "vms": memory_info.vms
-                        },
-                        "cpu_percent": process.cpu_percent(),
-                        "threads": process.num_threads()
-                    }
-                }
-                
-                logger.info(f'健康检查完成，服务运行正常: {response_data}')
-                return jsonify(response_data), 200
-        except Exception as e:
-            error_msg = f'健康检查失败: {str(e)}'
-            logger.error(error_msg)
-            return jsonify({
-                "message": error_msg,
-                "status": "error"
-            }), 500
+        return jsonify({
+            "status": "ok",
+            "message": "Service is healthy"
+        }), 200
 
     logger.info('应用初始化完成')
 
