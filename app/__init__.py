@@ -102,10 +102,16 @@ def create_app(config_class=None):
                 # 检查数据库连接
                 db.session.execute('SELECT 1')
                 logger.info('健康检查通过')
-                return jsonify({"status": "healthy", "database": "connected"}), 200
+                return jsonify({
+                    "message": "Service is running",
+                    "status": "ok"
+                }), 200
         except Exception as e:
             logger.error(f'健康检查失败: {str(e)}')
-            return jsonify({"status": "unhealthy", "error": str(e)}), 500
+            return jsonify({
+                "message": str(e),
+                "status": "error"
+            }), 500
 
     logger.info('应用初始化完成')
 
