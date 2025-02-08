@@ -79,35 +79,14 @@ def create_app(config_class=None):
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         logger.info(f'尝试连接数据库: {database_url}')
-        
-        # 先测试数据库连接
-        # 解析数据库URL
-        parsed = urlparse(database_url)
-        dbname = parsed.path[1:]
-        user = parsed.username
-        password = parsed.password
-        host = parsed.hostname
-        port = parsed.port
-        
-        # 测试连接
-        logger.info(f'测试数据库连接 - 主机: {host}, 端口: {port}, 数据库: {dbname}, 用户: {user}')
-        conn = psycopg2.connect(
-            dbname=dbname,
-            user=user,
-            password=password,
-            host=host,
-            port=port
-        )
-        conn.close()
-        logger.info('PostgreSQL连接测试成功')
-        
-        # 设置SQLAlchemy
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_ECHO'] = True
         
         # 初始化数据库
         db.init_app(app)
+        with app.app_context():
+            db.create_all()
         logger.info('数据库初始化完成')
         
     except Exception as e:
