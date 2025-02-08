@@ -26,7 +26,15 @@ def create_app(config_class=None):
     # 添加健康检查端点
     @app.route('/health')
     def health_check():
-        return jsonify({"status": "healthy"}), 200
+        logger.info('收到健康检查请求')
+        try:
+            # 检查数据库连接
+            db.session.execute('SELECT 1')
+            logger.info('健康检查通过')
+            return jsonify({"status": "healthy", "database": "connected"}), 200
+        except Exception as e:
+            logger.error(f'健康检查失败: {str(e)}')
+            return jsonify({"status": "unhealthy", "error": str(e)}), 500
     
     # 初始化日志
     init_logging(app)
@@ -43,7 +51,10 @@ def create_app(config_class=None):
         logger.info(f'创建上传目录: {upload_dir}')
     
     # 配置数据库
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
+    database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     logger.info(f'数据库URI: {app.config["SQLALCHEMY_DATABASE_URI"]}')
     
