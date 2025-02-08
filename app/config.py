@@ -10,11 +10,39 @@ class Config:
     SECRET_KEY = os.environ.get('RAILWAY_SECRET_KEY') or os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     
     # 数据库配置
-    database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(basedir, 'app.db')
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    if all(os.environ.get(var) for var in ['PGHOST', 'PGPORT', 'PGUSER', 'PGPASSWORD', 'PGDATABASE']):
+        # 使用Railway标准PostgreSQL环境变量
+        database_url = (
+            f"postgresql://{os.environ['PGUSER']}:{os.environ['PGPASSWORD']}"
+            f"@{os.environ['PGHOST']}:{os.environ['PGPORT']}/{os.environ['PGDATABASE']}"
+        )
+    else:
+        # 回退到DATABASE_URL
+        database_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
     SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # SQLAlchemy连接池配置
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'pool_recycle': 1800,
+        'pool_pre_ping': True,
+        'connect_args': {
+            'connect_timeout': 10,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+            'application_name': 'underwriting_system',
+            'client_encoding': 'utf8',
+            'sslmode': 'require'
+        }
+    }
     
     # 上传文件配置
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
