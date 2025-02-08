@@ -14,6 +14,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import psutil
 from sqlalchemy import text
+import psycopg2
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -77,30 +79,35 @@ def create_app(config_class=None):
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         logger.info(f'尝试连接数据库: {database_url}')
+        
+        # 先测试数据库连接
+        # 解析数据库URL
+        parsed = urlparse(database_url)
+        dbname = parsed.path[1:]
+        user = parsed.username
+        password = parsed.password
+        host = parsed.hostname
+        port = parsed.port
+        
+        # 测试连接
+        logger.info(f'测试数据库连接 - 主机: {host}, 端口: {port}, 数据库: {dbname}, 用户: {user}')
+        conn = psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port
+        )
+        conn.close()
+        logger.info('PostgreSQL连接测试成功')
+        
+        # 设置SQLAlchemy
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config['SQLALCHEMY_ECHO'] = True
         
         # 初始化数据库
         db.init_app(app)
-        with app.app_context():
-            try:
-                # 测试数据库连接
-                connection = db.engine.connect()
-                logger.info('数据库连接测试成功')
-                # 测试数据库读写
-                connection.execute(text('SELECT 1'))
-                logger.info('数据库读取测试成功')
-                # 测试数据库权限
-                connection.execute(text('CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY)'))
-                logger.info('数据库写入测试成功')
-                connection.execute(text('DROP TABLE IF EXISTS test_table'))
-                connection.close()
-            except Exception as e:
-                logger.error(f'数据库操作测试失败: {str(e)}')
-                logger.error(f'错误类型: {type(e).__name__}')
-                logger.error(f'错误详情: {str(e.__dict__)}')
-                raise
         logger.info('数据库初始化完成')
         
     except Exception as e:
