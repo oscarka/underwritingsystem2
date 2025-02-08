@@ -43,9 +43,9 @@ RUN mkdir -p app/uploads app/static/admin logs && \
 EXPOSE 5000
 
 # 启动命令
-CMD sleep 10 && \
+CMD sleep 30 && \
     echo "Database URL: $DATABASE_URL" && \
-    rm -f instance/app.db && \
+    echo "Initializing database..." && \
+    flask db upgrade head || flask db stamp head && \
     python init_db.py && \
-    flask db stamp head && \
     gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 
