@@ -84,15 +84,29 @@ def create_app(config_class=None):
         db.init_app(app)
         with app.app_context():
             try:
-                db.engine.connect()
+                # 测试数据库连接
+                connection = db.engine.connect()
                 logger.info('数据库连接测试成功')
+                # 测试数据库读写
+                connection.execute('SELECT 1')
+                logger.info('数据库读取测试成功')
+                # 测试数据库权限
+                connection.execute('CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY)')
+                logger.info('数据库写入测试成功')
+                connection.execute('DROP TABLE IF EXISTS test_table')
+                connection.close()
             except Exception as e:
-                logger.error(f'数据库连接测试失败: {str(e)}')
+                logger.error(f'数据库操作测试失败: {str(e)}')
+                logger.error(f'错误类型: {type(e).__name__}')
+                logger.error(f'错误详情: {str(e.__dict__)}')
                 raise
         logger.info('数据库初始化完成')
         
     except Exception as e:
         logger.error(f'数据库初始化失败: {str(e)}')
+        logger.error(f'错误类型: {type(e).__name__}')
+        if hasattr(e, '__dict__'):
+            logger.error(f'错误详情: {str(e.__dict__)}')
         if os.environ.get('FLASK_ENV') == 'production':
             logger.error('生产环境数据库连接失败，终止应用启动')
             raise
