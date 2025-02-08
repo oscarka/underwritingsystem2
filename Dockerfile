@@ -35,6 +35,13 @@ ENV PORT=5000
 ENV DATABASE_URL=${DATABASE_URL}
 ENV SQLALCHEMY_ECHO=1
 
+# 数据库连接池配置
+ENV SQLALCHEMY_POOL_SIZE=5
+ENV SQLALCHEMY_MAX_OVERFLOW=10
+ENV SQLALCHEMY_POOL_TIMEOUT=30
+ENV SQLALCHEMY_POOL_RECYCLE=1800
+ENV SQLALCHEMY_POOL_PRE_PING=true
+
 # 创建必要的目录
 RUN mkdir -p app/uploads app/static/admin logs && \
     chmod -R 777 app/uploads logs
@@ -43,5 +50,5 @@ RUN mkdir -p app/uploads app/static/admin logs && \
 EXPOSE 5000
 
 # 启动命令
-CMD python init_db.py && \
+CMD flask db upgrade && \
     gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 
