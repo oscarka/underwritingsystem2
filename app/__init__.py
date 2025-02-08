@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 def create_app(config_class=None):
     logger.info('开始创建Flask应用...')
     app = Flask(__name__, static_folder='static')
+    
+    # 配置基础设置
     if config_class is None:
         config_class = get_config()
     app.config.from_object(config_class)
@@ -27,6 +29,14 @@ def create_app(config_class=None):
     # 初始化日志
     init_logging(app)
     logger.info('日志系统初始化完成')
+    
+    # 添加健康检查端点 (最优先)
+    @app.route('/health')
+    def health_check():
+        return jsonify({
+            "status": "ok",
+            "message": "Service is healthy"
+        }), 200
     
     # 添加根路由
     @app.route('/')
@@ -45,7 +55,7 @@ def create_app(config_class=None):
     def serve_admin(path):
         return send_from_directory('static/admin', path)
     
-    # 配置 CORS - 开发环境允许所有来源
+    # 配置 CORS
     CORS(app)
     logger.info('CORS配置完成')
     
@@ -65,31 +75,24 @@ def create_app(config_class=None):
         logger.info(f'数据库配置完成: {database_url}')
         
         # 初始化数据库
-        logger.info('开始初始化数据库...')
         db.init_app(app)
+        logger.info('数据库初始化完成')
         
-        # 测试数据库连接
-        with app.app_context():
-            db.engine.connect()
-            logger.info('数据库连接测试成功')
-            
     except Exception as e:
         logger.error(f'数据库初始化失败: {str(e)}')
-        # 如果是在生产环境，使用SQLite作为后备
         if os.environ.get('FLASK_ENV') == 'production':
             logger.info('切换到SQLite数据库...')
             app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
             db.init_app(app)
     
     # 初始化其他扩展
-    logger.info('开始初始化其他扩展...')
     try:
         login_manager.init_app(app)
         migrate.init_app(app, db)
         logger.info('扩展初始化完成')
     except Exception as e:
         logger.error(f'扩展初始化失败: {str(e)}')
-
+    
     # 配置user_loader
     @login_manager.user_loader
     def load_user(user_id):
@@ -131,31 +134,31 @@ def create_app(config_class=None):
     app.register_blueprint(underwriting_bp, url_prefix='/api/v1/underwriting')
     logger.info('核保规则蓝图注册完成')
 
-    # 添加健康检查端点
-    @app.route('/health')
-    def health_check():
-        return jsonify({
-            "status": "ok",
-            "message": "Service is healthy"
-        }), 200
-
-    logger.info('应用初始化完成')
-
     # 配置日志
     if not app.debug and not app.testing:
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        file_handler = RotatingFileHandler('logs/app.log',
-                                         maxBytes=10240,
-                                         backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s '
-            '[in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-
+        if app.config['LOG_TO_STDOUT']:
+            stream_handler = logging.StreamHandler()
+            stream_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+            ))
+            stream_handler.setLevel(logging.INFO)
+            app.logger.addHandler(stream_handler)
+        else:
+            if not os.path.exists('logs'):
+                os.mkdir('logs')
+            file_handler = RotatingFileHandler(
+                'logs/app.log',
+                maxBytes=10240,
+                backupCount=10
+            )
+            file_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+            ))
+            file_handler.setLevel(logging.INFO)
+            app.logger.addHandler(file_handler)
+        
         app.logger.setLevel(logging.INFO)
         app.logger.info('应用启动')
-
+    
+    logger.info('应用初始化完成')
     return app 
