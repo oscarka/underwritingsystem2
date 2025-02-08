@@ -8,6 +8,11 @@ class Conclusion(BaseModel):
     __tablename__ = 'conclusions'
     
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50))  # 结论编码
+    name = db.Column(db.String(100))  # 结论名称
+    content = db.Column(db.Text)  # 结论内容
+    decision = db.Column(db.String(50))  # 决策结果
+    em_value = db.Column(db.Float)  # 加费系数
     question_code = db.Column(db.String(50))  # 问题编码
     answer_content = db.Column(db.Text)  # 答案内容
     next_question_code = db.Column(db.String(50))  # 下一个问题编码
@@ -19,13 +24,15 @@ class Conclusion(BaseModel):
     critical_illness_special_code = db.Column(db.String(50))  # 重疾特殊编码
     display_order = db.Column(db.Integer, default=0)  # 答案展示顺序
     remark = db.Column(db.Text)  # 备注
-    rule_id = db.Column(db.Integer, db.ForeignKey('underwriting_rules.id'))  # 规则ID
+    rule_id = db.Column(db.Integer, db.ForeignKey('underwriting_rules.id', name='fk_conclusion_rule'))  # 规则ID
+    type_id = db.Column(db.Integer, db.ForeignKey('conclusion_types.id', name='fk_conclusion_type'))  # 结论类型ID
     batch_no = db.Column(db.String(50))  # 批次号
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 创建时间
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)  # 更新时间
     
     # 关系
     underwriting_rule = db.relationship('UnderwritingRule', back_populates='conclusions')
+    conclusion_type = db.relationship('ConclusionType', backref='conclusions')
     
     def __init__(self, **kwargs):
         """初始化方法"""
@@ -36,6 +43,11 @@ class Conclusion(BaseModel):
         """转换为字典"""
         return {
             'id': self.id,
+            'code': self.code,
+            'name': self.name,
+            'content': self.content,
+            'decision': self.decision,
+            'em_value': self.em_value,
             'question_code': self.question_code,
             'answer_content': self.answer_content,
             'next_question_code': self.next_question_code,
@@ -48,6 +60,7 @@ class Conclusion(BaseModel):
             'display_order': self.display_order,
             'remark': self.remark,
             'rule_id': self.rule_id,
+            'type_id': self.type_id,
             'batch_no': self.batch_no,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None

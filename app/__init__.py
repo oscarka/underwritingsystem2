@@ -47,6 +47,11 @@ def create_app(config_class=None):
         }), 200
     
     # 添加静态文件路由
+    @app.route('/admin')
+    @app.route('/admin/')
+    def admin_index():
+        return send_from_directory('static/admin', 'index.html')
+    
     @app.route('/login.html')
     def login_page():
         return send_from_directory('static/admin', 'index.html')

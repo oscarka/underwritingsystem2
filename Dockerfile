@@ -33,12 +33,14 @@ ENV LOG_TO_STDOUT=true
 ENV PORT=5000
 
 # 创建必要的目录
-RUN mkdir -p app/uploads app/static/admin logs
+RUN mkdir -p app/uploads app/static/admin logs && \
+    chmod -R 777 app/uploads logs
 
 # 暴露端口
 EXPOSE 5000
 
 # 启动命令
-CMD python manage.py db upgrade && \
+CMD rm -f instance/app.db && \
     python init_db.py && \
+    flask db stamp head && \
     gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 

@@ -349,7 +349,7 @@ def init_db():
             default_channel = Channel.query.filter_by(code='default').first()
             default_company = InsuranceCompany.query.filter_by(code='default').first()
             default_type = ProductType.query.filter_by(code='default').first()
-            default_ai = AIParameter.query.filter_by(name='传统AI参数').first()
+            default_ai = AIParameter.query.filter_by(name='传统问答参数').first()
 
             products = [
                 ('默认产品', 'DEFAULT001'),
