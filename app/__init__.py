@@ -94,7 +94,7 @@ def create_app(config_class=None):
     logger.info('核保规则蓝图注册完成')
 
     # 添加健康检查端点（移到最后，确保所有初始化都完成）
-    @app.route('/health')
+    @app.route('/health', methods=['GET', 'HEAD'])
     def health_check():
         logger.info('收到健康检查请求')
         try:
