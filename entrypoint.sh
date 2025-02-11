@@ -9,10 +9,21 @@ echo "PORT=$PORT"
 echo "FLASK_APP=$FLASK_APP"
 echo "FLASK_DEBUG=$FLASK_DEBUG"
 
-export PGPASSWORD=your-password
+# 从 DATABASE_URL 解析连接信息
+if [[ $DATABASE_URL =~ ^postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)$ ]]; then
+    DB_USER="${BASH_REMATCH[1]}"
+    DB_PASS="${BASH_REMATCH[2]}"
+    DB_HOST="${BASH_REMATCH[3]}"
+    DB_PORT="${BASH_REMATCH[4]}"
+    DB_NAME="${BASH_REMATCH[5]}"
+    export PGPASSWORD=$DB_PASS
+else
+    echo "无法解析 DATABASE_URL"
+    exit 1
+fi
 
 echo "Waiting for database..."
-while ! pg_isready -h db -p 5432 -U postgres; do
+while ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
     sleep 1
 done
 echo "Database is ready!"
@@ -25,7 +36,7 @@ python << END
 import sys
 from sqlalchemy import create_engine
 try:
-    engine = create_engine('postgresql://postgres:your-password@db:5432/underwriting')
+    engine = create_engine('${DATABASE_URL}')
     connection = engine.connect()
     print("Database connection successful!")
     connection.close()
