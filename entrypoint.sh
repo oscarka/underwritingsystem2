@@ -20,9 +20,6 @@ echo "Database is ready!"
 echo "Creating database if not exists..."
 psql -h db -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'underwriting'" | grep -q 1 || psql -h db -U postgres -c "CREATE DATABASE underwriting"
 
-echo "Checking database tables before migration..."
-psql -h db -U postgres -d underwriting -c "\dt"
-
 echo "Testing database connection..."
 python << END
 import sys
@@ -41,9 +38,6 @@ END
 echo "Initializing database schema and default data..."
 export PYTHONPATH=/app
 python init_db.py
-
-echo "Running migrations..."
-FLASK_APP=app flask db upgrade
 
 echo "Starting Gunicorn..."
 exec gunicorn app:app --bind 0.0.0.0:$PORT --log-level debug --capture-output --reload 
