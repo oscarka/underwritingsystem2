@@ -36,14 +36,15 @@ RUN chmod +x /entrypoint.sh
 ENV FLASK_APP=app \
     FLASK_DEBUG=0 \
     PYTHONUNBUFFERED=1 \
-    LOG_TO_STDOUT=true
+    LOG_TO_STDOUT=true \
+    PORT=8080
 
 # 创建必要的目录
 RUN mkdir -p app/uploads app/static/admin logs && \
     chmod -R 777 app/uploads logs
 
 # 暴露端口
-EXPOSE $PORT
+EXPOSE 8080
 
 # 启动命令
 CMD ["/entrypoint.sh"] 
