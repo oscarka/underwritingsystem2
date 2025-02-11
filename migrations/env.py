@@ -40,15 +40,12 @@ def get_sqlalchemy_config():
     
     # 基础配置
     configuration = {
-        'sqlalchemy.url': db_config['url'],
+        'sqlalchemy.url': db_config['url']
     }
     
     # 添加引擎选项
     for key, value in db_config['engine_options'].items():
-        configuration[f'sqlalchemy.{key}'] = str(value)
-    
-    # 添加连接参数
-    configuration['sqlalchemy.connect_args'] = str(db_config['connect_args'])
+        configuration[f'sqlalchemy.{key}'] = value
     
     return configuration
 

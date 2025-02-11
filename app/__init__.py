@@ -83,7 +83,7 @@ def create_app(config_class=None):
         logger.info('数据库和迁移初始化完成')
         
         with app.app_context():
-            if os.environ.get('FLASK_ENV') == 'production':
+            if os.environ.get('FLASK_DEBUG') == '0':  # 生产环境
                 # 生产环境 (Railway)
                 retry_count = 3
                 for attempt in range(retry_count):
@@ -225,4 +225,7 @@ def create_app(config_class=None):
         app.logger.info('应用启动')
     
     logger.info('应用初始化完成')
-    return app 
+    return app
+
+# 创建应用实例
+app = create_app() 

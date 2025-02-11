@@ -42,10 +42,7 @@ class Config:
                 
             return {
                 'url': database_url,
-                'connect_args': {
-                    'sslmode': 'require',
-                    'connect_timeout': 10
-                },
+                'connect_args': {},
                 'engine_options': {
                     'pool_size': 5,
                     'pool_recycle': 1800,
@@ -75,7 +72,7 @@ class Config:
         }
     
     # 获取数据库配置
-    db_config = get_database_config()
+    db_config = get_database_config.__func__()
     SQLALCHEMY_DATABASE_URI = db_config['url']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {**db_config['engine_options'], 'connect_args': db_config['connect_args']}

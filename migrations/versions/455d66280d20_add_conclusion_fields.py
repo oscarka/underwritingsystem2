@@ -1,7 +1,7 @@
 """add conclusion fields
 
 Revision ID: 455d66280d20
-Revises: 
+Revises: eb157058c420
 Create Date: 2025-02-08 15:34:48.010400
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '455d66280d20'
-down_revision = None
+down_revision = 'eb157058c420'
 branch_labels = None
 depends_on = None
 

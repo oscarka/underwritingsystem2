@@ -15,6 +15,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
@@ -26,9 +27,13 @@ COPY . .
 # 复制前端构建结果
 COPY --from=frontend-builder /frontend/dist app/static/admin/
 
+# 复制并设置启动脚本
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # 基础环境变量
 ENV FLASK_APP=app \
-    FLASK_ENV=production \
+    FLASK_DEBUG=0 \
     PYTHONUNBUFFERED=1 \
     LOG_TO_STDOUT=true
 
@@ -40,5 +45,4 @@ RUN mkdir -p app/uploads app/static/admin logs && \
 EXPOSE $PORT
 
 # 启动命令
-CMD flask db upgrade && \
-    gunicorn --bind "0.0.0.0:$PORT" --workers 1 --timeout 120 "app:create_app()" 
+CMD ["/entrypoint.sh"] 
