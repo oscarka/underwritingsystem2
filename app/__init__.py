@@ -79,6 +79,8 @@ def create_app(config_class=None):
     try:
         logger.info('初始化数据库...')
         db.init_app(app)
+        migrate.init_app(app, db)
+        logger.info('数据库和迁移初始化完成')
         
         with app.app_context():
             if os.environ.get('FLASK_ENV') == 'production':
