@@ -42,7 +42,7 @@ class Config:
                 
             return {
                 'url': database_url,
-                'connect_args': {},
+                'connect_args': {'sslmode': 'require'},
                 'engine_options': {
                     'pool_size': 5,
                     'pool_recycle': 1800,
