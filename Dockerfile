@@ -6,6 +6,14 @@ RUN npm install
 COPY app/frontend .
 RUN npm run build
 
+# 移动端构建阶段
+FROM node:18 AS mobile-builder
+WORKDIR /mobile
+COPY mobile-app/package*.json ./
+RUN npm install
+COPY mobile-app .
+RUN npm run build
+
 # 后端构建阶段
 FROM python:3.9-slim
 
@@ -27,6 +35,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 # 复制前端构建结果
 COPY --from=frontend-builder /frontend/dist app/static/admin/
+# 复制移动端构建结果
+COPY --from=mobile-builder /mobile/dist app/static/mobile/
 
 # 复制并设置启动脚本
 COPY entrypoint.sh /entrypoint.sh
@@ -39,7 +49,7 @@ ENV FLASK_APP=app \
     LOG_TO_STDOUT=true
 
 # 创建必要的目录
-RUN mkdir -p app/uploads app/static/admin logs && \
+RUN mkdir -p app/uploads app/static/admin app/static/mobile logs && \
     chmod -R 777 app/uploads logs
 
 # 暴露端口（使用环境变量）
