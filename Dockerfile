@@ -28,7 +28,6 @@ COPY --from=frontend-builder /frontend/dist app/static/admin/
 
 # 基础环境变量
 ENV FLASK_APP=app \
-    FLASK_DEBUG=0 \
     FLASK_ENV=production \
     PYTHONUNBUFFERED=1 \
     LOG_TO_STDOUT=true

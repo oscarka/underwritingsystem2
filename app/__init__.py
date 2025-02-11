@@ -17,6 +17,7 @@ from sqlalchemy import text, inspect
 import psycopg2
 from urllib.parse import urlparse
 import sqlalchemy as sa
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -76,162 +77,76 @@ def create_app(config_class=None):
     
     # 配置数据库
     try:
-        database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
-        if database_url.startswith('postgres://'):
-            database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        
-        # 检查是否有单独设置的数据库密码
-        postgres_password = os.environ.get('POSTGRES_PASSWORD')
-        
-        # 打印原始URL（隐藏密码）
-        safe_original_url = database_url
-        if '@' in safe_original_url:
-            user_pass = safe_original_url.split('@')[0]
-            if ':' in user_pass:
-                user = user_pass.split(':')[0].split('/')[-1]
-                safe_original_url = safe_original_url.replace(user_pass, f"{user}:****")
-        logger.info(f'原始数据库URL: {safe_original_url}')
-        
-        # 解析数据库URL
-        parsed = urlparse(database_url)
-        logger.info(f'URL解析结果: scheme={parsed.scheme}, hostname={parsed.hostname}, port={parsed.port}, path={parsed.path}, username={parsed.username}')
-        
-        # 如果没有用户名，使用默认用户名
-        if not parsed.username:
-            logger.info('未检测到用户名，使用默认用户名postgres')
-            parsed = parsed._replace(username='postgres')
-        
-        # 使用环境变量中的密码或URL中的密码
-        db_password = postgres_password if postgres_password else parsed.password
-        if not db_password:
-            logger.error('未找到数据库密码')
-            raise ValueError('数据库密码未设置')
-        
-        # 重构数据库URL
-        database_url = f"postgresql://{parsed.username}:{db_password}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
-        
-        # 打印最终数据库 URL（确保密码被隐藏）
-        safe_url = database_url
-        if '@' in safe_url:
-            user_pass = safe_url.split('@')[0]
-            if ':' in user_pass:
-                user = user_pass.split(':')[0].split('/')[-1]
-                safe_url = safe_url.replace(user_pass, f"{user}:****")
-        logger.info(f'最终数据库URL: {safe_url}')
-        
-        # 添加连接参数
-        connect_args = {
-            'connect_timeout': 10,
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-            'application_name': 'underwriting_system',
-            'client_encoding': 'utf8',
-            'sslmode': 'require'  # 添加SSL连接要求
-        }
-        logger.info(f'数据库连接参数: {connect_args}')
-        
-        # 尝试直接使用psycopg2测试连接
-        try:
-            logger.info('使用psycopg2直接测试数据库连接...')
-            test_conn = psycopg2.connect(
-                dbname=parsed.path[1:],
-                user=parsed.username,
-                password=db_password,
-                host=parsed.hostname,
-                port=parsed.port or 5432,
-                **connect_args
-            )
-            logger.info('psycopg2直接连接测试成功')
-            with test_conn.cursor() as cur:
-                cur.execute('SELECT version()')
-                version = cur.fetchone()[0]
-                logger.info(f'PostgreSQL版本: {version}')
-            test_conn.close()
-        except Exception as psycopg2_error:
-            logger.error(f'psycopg2直接连接测试失败: {str(psycopg2_error)}')
-            if hasattr(psycopg2_error, 'pgcode'):
-                logger.error(f'PostgreSQL错误代码: {psycopg2_error.pgcode}')
-            if hasattr(psycopg2_error, 'pgerror'):
-                logger.error(f'PostgreSQL错误信息: {psycopg2_error.pgerror}')
-        
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        app.config['SQLALCHEMY_ECHO'] = True
-        
-        # 记录连接池配置
-        pool_settings = {
-            'pool_size': 5,
-            'max_overflow': 10,
-            'pool_timeout': 30,
-            'pool_recycle': 1800,
-            'pool_pre_ping': True,
-            'connect_args': connect_args
-        }
-        logger.info(f'数据库连接池配置: {pool_settings}')
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = pool_settings
-        
-        # 初始化数据库和迁移
-        logger.info('开始初始化数据库...')
+        logger.info('初始化数据库...')
         db.init_app(app)
-        logger.info('数据库初始化完成')
-        
-        logger.info('开始初始化迁移...')
-        migrate.init_app(app, db)
-        logger.info('迁移初始化完成')
         
         with app.app_context():
-            # 检查数据库连接
-            try:
-                logger.info('尝试测试数据库连接...')
-                conn = db.engine.connect()
-                logger.info('数据库连接成功')
+            if os.environ.get('FLASK_ENV') == 'production':
+                # 生产环境 (Railway)
+                retry_count = 3
+                for attempt in range(retry_count):
+                    try:
+                        conn = db.engine.connect()
+                        result = conn.execute(sa.text('SELECT 1')).scalar()
+                        conn.close()
+                        logger.info('数据库连接成功')
+                        break
+                    except Exception as e:
+                        if attempt == retry_count - 1:
+                            logger.error(f'数据库连接失败: {str(e)}')
+                            raise
+                        logger.warning(f'第 {attempt + 1} 次连接尝试失败，将重试...')
+                        time.sleep(2)
                 
-                # 执行简单查询
-                logger.info('执行测试查询...')
-                result = conn.execute(sa.text('SELECT 1')).scalar()
-                logger.info(f'测试查询结果: {result}')
-                
-                conn.close()
-                logger.info('数据库连接测试完成')
-                
-                # 检查表是否存在
-                logger.info('检查数据库表...')
+                # 检查数据库表
                 inspector = inspect(db.engine)
-                existing_tables = inspector.get_table_names()
-                if not existing_tables:
-                    logger.info('数据库表不存在，开始创建...')
-                    db.create_all()
-                    logger.info('数据库表创建完成')
-                else:
-                    logger.info(f'发现现有表: {", ".join(existing_tables)}')
-            except Exception as conn_error:
-                logger.error(f'数据库连接测试失败: {str(conn_error)}')
-                logger.error(f'错误类型: {type(conn_error).__name__}')
-                if hasattr(conn_error, '__dict__'):
-                    logger.error(f'错误详情: {conn_error.__dict__}')
-                if hasattr(conn_error, 'orig'):
-                    logger.error(f'原始错误: {conn_error.orig}')
-                raise
+                tables = inspector.get_table_names()
+                logger.info(f'现有数据库表: {", ".join(tables)}')
+            else:
+                # 开发环境保持原有逻辑
+                database_url = os.environ.get('RAILWAY_DATABASE_URL') or os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'app.db'))
+                if database_url.startswith('postgres://'):
+                    database_url = database_url.replace('postgres://', 'postgresql://', 1)
                 
-        logger.info('数据库初始化完成')
-        
+                # 检查是否有单独设置的数据库密码
+                postgres_password = os.environ.get('POSTGRES_PASSWORD')
+                
+                # 解析数据库URL
+                parsed = urlparse(database_url)
+                
+                # 如果没有用户名，使用默认用户名
+                if not parsed.username:
+                    logger.info('未检测到用户名，使用默认用户名postgres')
+                    parsed = parsed._replace(username='postgres')
+                
+                # 使用环境变量中的密码或URL中的密码
+                db_password = postgres_password if postgres_password else parsed.password
+                if not db_password:
+                    logger.error('未找到数据库密码')
+                    raise ValueError('数据库密码未设置')
+                
+                # 重构数据库URL
+                database_url = f"postgresql://{parsed.username}:{db_password}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
+                
+                app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+                db.init_app(app)
+                
+                # 测试连接
+                conn = db.engine.connect()
+                result = conn.execute(sa.text('SELECT 1')).scalar()
+                conn.close()
+                logger.info('数据库连接成功')
+    
     except Exception as e:
         logger.error(f'数据库初始化失败: {str(e)}')
-        logger.error(f'错误类型: {type(e).__name__}')
-        if hasattr(e, '__dict__'):
-            logger.error(f'错误详情: {e.__dict__}')
         if hasattr(e, 'orig'):
             logger.error(f'原始错误: {e.orig}')
         if os.environ.get('FLASK_ENV') == 'production':
-            logger.error('生产环境数据库连接失败，终止应用启动')
             raise
         else:
             logger.warning('切换到SQLite数据库...')
             app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'app.db')
             db.init_app(app)
-            migrate.init_app(app, db)
     
     # 初始化其他扩展
     try:
