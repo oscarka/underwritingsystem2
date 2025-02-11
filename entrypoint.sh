@@ -28,9 +28,6 @@ while ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
 done
 echo "Database is ready!"
 
-echo "Creating database if not exists..."
-psql -h db -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'underwriting'" | grep -q 1 || psql -h db -U postgres -c "CREATE DATABASE underwriting"
-
 echo "Testing database connection..."
 python << END
 import sys
