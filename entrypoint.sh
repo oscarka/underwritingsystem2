@@ -23,7 +23,6 @@ psql -h db -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'underwrit
 echo "Checking database tables before migration..."
 psql -h db -U postgres -d underwriting -c "\dt"
 
-echo "Running database migrations..."
 echo "Testing database connection..."
 python << END
 import sys
@@ -39,25 +38,12 @@ except Exception as e:
     sys.exit(1)
 END
 
-echo "Running migrations..."
+echo "Initializing database schema and default data..."
 export PYTHONPATH=/app
+python init_db.py
 
-# 尝试修复多个head的问题
-echo "Merging multiple heads..."
-FLASK_APP=app flask db merge heads || {
-    echo "Failed to merge heads, trying to upgrade to specific revision..."
-    FLASK_APP=app flask db upgrade eb157058c420 || {
-        echo "Failed to upgrade to eb157058c420, trying next revision..."
-        FLASK_APP=app flask db upgrade 455d66280d20 || {
-            echo "Migration failed with error code $?"
-            echo "Migration history:"
-            FLASK_APP=app flask db history
-            echo "Current migration head:"
-            FLASK_APP=app flask db current
-            exit 1
-        }
-    }
-}
+echo "Running migrations..."
+FLASK_APP=app flask db upgrade
 
 echo "Starting Gunicorn..."
-exec gunicorn --bind 0.0.0.0:$PORT app:app --log-level debug --capture-output --reload 
+exec gunicorn app:app --bind 0.0.0.0:$PORT --log-level debug --capture-output --reload 
