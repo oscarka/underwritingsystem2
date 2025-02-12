@@ -84,12 +84,19 @@ def create_app(config_class=None):
     # 移动端资源文件路由
     @app.route('/product/assets/<path:path>')
     def serve_mobile_assets(path):
-        return send_from_directory('static/mobile/assets', path)
+        response = send_from_directory('static/mobile/assets', path)
+        # 为静态资源设置适当的缓存
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        return response
         
     # 移动端产品路由
     @app.route('/product/<path:path>')
     def serve_mobile_product(path=None):
-        return send_from_directory('static/mobile', 'index.html')
+        response = send_from_directory('static/mobile', 'index.html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
     
     # 配置 CORS
     CORS(app)

@@ -1,16 +1,16 @@
 # 前端构建阶段
-FROM node:18 AS frontend-builder
+FROM node:18-slim AS frontend-builder
 WORKDIR /frontend
 COPY app/frontend/package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 COPY app/frontend .
 RUN npm run build
 
 # 移动端构建阶段
-FROM node:18 AS mobile-builder
+FROM node:18-slim AS mobile-builder
 WORKDIR /mobile
 COPY mobile-app/package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 COPY mobile-app .
 # 增加 NODE_OPTIONS 来增加内存限制
 ENV NODE_OPTIONS="--max-old-space-size=4096"
@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     curl \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* /var/tmp/*
 
 # 安装 Python 依赖
 COPY requirements.txt .
@@ -50,13 +51,18 @@ RUN chmod +x /entrypoint.sh
 ENV FLASK_APP=app \
     FLASK_DEBUG=0 \
     PYTHONUNBUFFERED=1 \
-    LOG_TO_STDOUT=true
+    LOG_TO_STDOUT=true \
+    PORT=5001
 
-# 创建必要的目录
+# 创建必要的目录并设置权限
 RUN mkdir -p app/uploads app/static/admin app/static/mobile logs && \
-    chmod -R 777 app/uploads logs
+    chmod -R 777 app/uploads logs app/static && \
+    chown -R nobody:nogroup /app
 
-# 暴露端口（使用环境变量）
+# 切换到非root用户
+USER nobody
+
+# 暴露端口
 EXPOSE ${PORT}
 
 # 启动命令
