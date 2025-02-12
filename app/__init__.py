@@ -55,15 +55,31 @@ def create_app(config_class=None):
     @app.route('/admin')
     @app.route('/admin/')
     def admin_index():
-        return send_from_directory('static/admin', 'index.html')
+        response = send_from_directory('static/admin', 'index.html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
     
     @app.route('/login.html')
     def login_page():
-        return send_from_directory('static/admin', 'index.html')
+        response = send_from_directory('static/admin', 'index.html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
     
     @app.route('/admin/<path:path>')
     def serve_admin(path):
-        return send_from_directory('static/admin', path)
+        response = send_from_directory('static/admin', path)
+        if path.endswith('.html'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '-1'
+        else:
+            # 为静态资源设置适当的缓存
+            response.headers['Cache-Control'] = 'public, max-age=31536000'
+        return response
     
     # 移动端资源文件路由
     @app.route('/product/assets/<path:path>')
