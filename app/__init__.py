@@ -65,6 +65,16 @@ def create_app(config_class=None):
     def serve_admin(path):
         return send_from_directory('static/admin', path)
     
+    # 移动端资源文件路由
+    @app.route('/product/assets/<path:path>')
+    def serve_mobile_assets(path):
+        return send_from_directory('static/mobile/assets', path)
+        
+    # 移动端产品路由
+    @app.route('/product/<path:path>')
+    def serve_mobile_product(path=None):
+        return send_from_directory('static/mobile', 'index.html')
+    
     # 配置 CORS
     CORS(app)
     logger.info('CORS配置完成')

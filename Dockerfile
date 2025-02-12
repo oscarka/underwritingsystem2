@@ -2,7 +2,7 @@
 FROM node:18 AS frontend-builder
 WORKDIR /frontend
 COPY app/frontend/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY app/frontend .
 RUN npm run build
 
@@ -10,8 +10,10 @@ RUN npm run build
 FROM node:18 AS mobile-builder
 WORKDIR /mobile
 COPY mobile-app/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY mobile-app .
+# 增加 NODE_OPTIONS 来增加内存限制
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # 后端构建阶段
@@ -19,12 +21,14 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# 安装系统依赖
+# 安装系统依赖（增加 DEBIAN_FRONTEND 以减少交互）
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     postgresql-client \
     curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
