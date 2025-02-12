@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, redirect, url_for, send_from_directory
+from flask import Flask, jsonify, redirect, url_for, send_from_directory, request
 from flask_cors import CORS
 from app.config import get_config
 from app.logging import init_logging
@@ -55,22 +55,50 @@ def create_app(config_class=None):
     @app.route('/admin')
     @app.route('/admin/')
     def admin_index():
+        logger.info('[路由] /admin 路径请求:', {
+            'path': '/admin',
+            'method': 'GET',
+            'headers': dict(request.headers),
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         response = send_from_directory('static/admin', 'index.html')
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
+        logger.info('[路由] /admin 响应完成:', {
+            'status_code': response.status_code,
+            'content_type': response.content_type,
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         return response
     
     @app.route('/login.html')
     def login_page():
+        logger.info('[路由] /login.html 路径请求:', {
+            'path': '/login.html',
+            'method': 'GET',
+            'headers': dict(request.headers),
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         response = send_from_directory('static/admin', 'index.html')
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
+        logger.info('[路由] /login.html 响应完成:', {
+            'status_code': response.status_code,
+            'content_type': response.content_type,
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         return response
     
     @app.route('/admin/<path:path>')
     def serve_admin(path):
+        logger.info('[路由] /admin/* 路径请求:', {
+            'path': f'/admin/{path}',
+            'method': 'GET',
+            'headers': dict(request.headers),
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         response = send_from_directory('static/admin', path)
         if path.endswith('.html'):
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -79,6 +107,13 @@ def create_app(config_class=None):
         else:
             # 为静态资源设置适当的缓存
             response.headers['Cache-Control'] = 'public, max-age=31536000'
+        logger.info('[路由] /admin/* 响应完成:', {
+            'path': f'/admin/{path}',
+            'status_code': response.status_code,
+            'content_type': response.content_type,
+            'is_html': path.endswith('.html'),
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         return response
     
     # 移动端资源文件路由

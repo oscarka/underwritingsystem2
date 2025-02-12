@@ -7,7 +7,7 @@ import LoginView from '@/views/LoginView.vue'
 import { isLoggedIn } from '@/utils/auth'
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory('/admin/'),
     routes: [
         {
             path: '/login',
@@ -20,12 +20,28 @@ const router = createRouter({
             children: [
                 {
                     path: '',
-                    redirect: '/dashboard'
+                    redirect: (to) => {
+                        console.log('[Router-Debug] 根路径重定向:', {
+                            originalPath: to.path,
+                            redirectTo: '/dashboard',
+                            fullPath: to.fullPath,
+                            matched: to.matched.length,
+                            timestamp: new Date().toISOString()
+                        })
+                        return '/dashboard'
+                    }
                 },
                 {
                     path: 'dashboard',
                     name: 'dashboard',
-                    component: DashboardView
+                    component: DashboardView,
+                    beforeEnter: (to, from) => {
+                        console.log('[Router-Debug] 进入 dashboard 路由:', {
+                            from: from.fullPath,
+                            to: to.fullPath,
+                            timestamp: new Date().toISOString()
+                        })
+                    }
                 },
                 // 产品管理
                 {
@@ -106,33 +122,46 @@ const router = createRouter({
                     }
                 }
             ]
+        },
+        // 添加全局重定向，并增加更详细的日志
+        {
+            path: '/:pathMatch(.*)*',
+            redirect: (to) => {
+                console.log('[Router-Debug] 全局重定向处理:', {
+                    originalPath: to.path,
+                    pathMatch: to.params.pathMatch,
+                    fullPath: to.fullPath,
+                    matched: to.matched.length,
+                    timestamp: new Date().toISOString()
+                })
+                return '/dashboard'
+            }
         }
     ]
 })
 
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
-    console.log('[Router] 路由导航开始:', {
+    console.log('[Router-Debug] 路由导航开始:', {
         to: {
             path: to.path,
             name: to.name,
-            params: to.params,
-            query: to.query,
-            meta: to.meta,
             fullPath: to.fullPath,
-            matched: to.matched.map(record => ({
-                path: record.path,
-                name: record.name,
-                components: Object.keys(record.components || {}),
-                props: record.props
-            }))
+            matched: to.matched.map(r => ({
+                path: r.path,
+                redirect: !!r.redirect,
+                name: r.name
+            })),
+            params: to.params,
+            query: to.query
         },
         from: {
             path: from.path,
             name: from.name,
             fullPath: from.fullPath
         },
-        isLoggedIn: isLoggedIn()
+        isLoggedIn: isLoggedIn(),
+        timestamp: new Date().toISOString()
     })
 
     // 特别记录核保规则相关路由
@@ -146,28 +175,45 @@ router.beforeEach((to, from, next) => {
 
     // 如果用户访问登录页面且已经登录，重定向到首页
     if (to.path === '/login' && isLoggedIn()) {
-        console.log('用户已登录，重定向到首页')
-        next('/')
+        console.log('[Router-Debug] 已登录用户访问登录页，执行重定向:', {
+            from: from.fullPath,
+            to: to.fullPath,
+            redirectTo: '/dashboard',
+            timestamp: new Date().toISOString()
+        })
+        next('/dashboard')
         return
     }
 
     // 如果用户访问需要认证的页面但未登录，重定向到登录页面
     if (to.path !== '/login' && !isLoggedIn()) {
-        console.log('用户未登录，重定向到登录页面')
+        console.log('[Router-Debug] 未登录用户访问受保护页面，执行重定向:', {
+            from: from.fullPath,
+            to: to.fullPath,
+            redirectTo: '/login',
+            timestamp: new Date().toISOString()
+        })
         next('/login')
         return
     }
 
-    console.log('允许导航到:', to.path)
+    console.log('[Router-Debug] 允许导航:', {
+        to: to.fullPath,
+        matched: to.matched.length,
+        matchedRoutes: to.matched.map(r => r.path),
+        timestamp: new Date().toISOString()
+    })
     next()
 })
 
 // 全局后置钩子
 router.afterEach((to, from) => {
-    console.log('[Router] 路由导航完成:', {
-        from: from.path,
-        to: to.path,
+    console.log('[Router-Debug] 路由导航完成:', {
+        from: from.fullPath,
+        to: to.fullPath,
         title: to.meta?.title,
+        matched: to.matched.length,
+        matchedRoutes: to.matched.map(r => r.path),
         timestamp: new Date().toISOString()
     })
 

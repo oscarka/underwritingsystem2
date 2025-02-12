@@ -30,29 +30,41 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        console.log('发送请求:', {
+        const requestId = Math.random().toString(36).substring(7);
+        console.log(`[请求开始] [${requestId}] 发送请求:`, {
             url: config.url,
             method: config.method,
             params: config.params,
             data: config.data,
             headers: config.headers,
-            silent: (config as RequestConfig).silent
+            silent: (config as RequestConfig).silent,
+            timestamp: new Date().toISOString()
         })
 
         const token = getToken()
         if (token && config.headers) {
             config.headers['Authorization'] = `Bearer ${token}`
-            console.log('添加认证头:', {
-                token,
-                authHeader: config.headers['Authorization']
+            console.log(`[Token验证] [${requestId}] 添加认证头:`, {
+                tokenExists: !!token,
+                tokenLength: token.length,
+                authHeader: config.headers['Authorization'],
+                timestamp: new Date().toISOString()
             })
         } else {
-            console.warn('未找到token或headers:', { token, headers: config.headers })
+            console.warn(`[Token警告] [${requestId}] 未找到token或headers:`, {
+                tokenExists: !!token,
+                headersExist: !!config.headers,
+                timestamp: new Date().toISOString()
+            })
         }
         return config
     },
     (error) => {
-        console.error('请求错误:', error)
+        console.error('[请求错误]', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        })
         return Promise.reject(error)
     }
 )
@@ -60,42 +72,50 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
     (response: AxiosResponse) => {
-        console.log('收到原始响应:', {
+        const requestId = Math.random().toString(36).substring(7);
+        console.log(`[响应成功] [${requestId}] 收到响应:`, {
             url: response.config.url,
             method: response.config.method,
             status: response.status,
             headers: response.headers,
-            rawData: response.data,
-            silent: (response.config as RequestConfig).silent
+            data: response.data,
+            silent: (response.config as RequestConfig).silent,
+            timestamp: new Date().toISOString()
         })
 
         const res = response.data as ApiResponse
         if (res.code === 200) {
-            console.log('响应成功，数据结构:', {
+            console.log(`[响应处理] [${requestId}] 响应成功:`, {
                 code: res.code,
                 message: res.message,
-                data: res.data
+                hasData: !!res.data,
+                timestamp: new Date().toISOString()
             })
             return {
                 ...response,
                 data: res
             }
         } else {
-            console.log('响应错误:', {
+            console.warn(`[响应异常] [${requestId}] 响应错误:`, {
                 code: res.code,
-                message: res.message
+                message: res.message,
+                timestamp: new Date().toISOString()
             })
             return Promise.reject(res)
         }
     },
     (error) => {
-        console.error('API请求失败:', {
+        const requestId = Math.random().toString(36).substring(7);
+        console.error(`[请求失败] [${requestId}] API请求失败:`, {
             url: error.config?.url,
             method: error.config?.method,
             status: error.response?.status,
+            statusText: error.response?.statusText,
             data: error.response?.data,
             error: error.message,
-            silent: (error.config as RequestConfig)?.silent
+            stack: error.stack,
+            silent: (error.config as RequestConfig)?.silent,
+            timestamp: new Date().toISOString()
         })
 
         if (error.response) {
@@ -104,21 +124,29 @@ request.interceptors.response.use(
 
             // 只有非静默请求才处理401错误
             if (status === 401 && !config?.silent) {
-                console.log('未授权访问，清除登录状态')
+                console.log(`[认证失败] [${requestId}] 未授权访问:`, {
+                    currentPath: window.location.pathname,
+                    timestamp: new Date().toISOString()
+                })
                 const currentPath = window.location.pathname
                 // 避免在登录页重复跳转
                 if (currentPath !== '/login') {
-                    // 保存当前路径
+                    console.log(`[重定向] [${requestId}] 准备跳转到登录页:`, {
+                        from: currentPath,
+                        timestamp: new Date().toISOString()
+                    })
+                    // 保存当前路径用于登录后重定向
                     localStorage.setItem('redirect', currentPath)
                     removeToken()
                     removeUser()
-                    // 延迟跳转避免频繁刷新
-                    setTimeout(() => {
-                        window.location.href = '/login'
-                    }, 100)
+                    // 立即跳转到登录页
+                    window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
                 }
             } else if (status === 403) {
-                console.log('禁止访问')
+                console.warn(`[权限拒绝] [${requestId}] 禁止访问:`, {
+                    url: error.config?.url,
+                    timestamp: new Date().toISOString()
+                })
                 showToast('error', '无权限访问')
             }
         }
