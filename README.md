@@ -101,8 +101,8 @@ npm run dev
 ```
 
 2. 访问地址
-- 管理后台：http://localhost:3004
-- 移动端：http://localhost:3001
+- 管理后台：http://localhost:3004；/admin
+- 移动端：http://localhost:3001；/product/1/basic-info
 - API：http://localhost:8000
 
 ## 许可证
